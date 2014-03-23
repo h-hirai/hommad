@@ -1,5 +1,8 @@
 module HomMad where
 
+boardSize :: Int
+boardSize = 9
+
 -- |Status of a point on a board.
 data Color
     = B -- ^Black
