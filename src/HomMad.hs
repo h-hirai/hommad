@@ -51,7 +51,8 @@ boardPut c b (row, col) = rplcIdx b row $ rplcIdx (b!!row) col c
     where rplcIdx l n a = let (i, (_:t)) = splitAt n l in i ++ (a:t)
 
 canPut :: GameStatus -> Point -> Bool
-canPut _ _ = True
+canPut GameStatus{_board=b} p | boardRef b p == E = True
+                              | otherwise         = False
 
 putStone :: GameStatus -> Point -> GameStatus
 putStone st@GameStatus{_board=b, _turn=t} p =
