@@ -25,14 +25,20 @@ data GameStatus
       } deriving (Show, Eq)
 
 -- |
--- >>> boardRef [[E,B],[W,E]] (0,1)
+-- >>> boardRef emptyBoard (1,-1)
+-- O
+-- >>> boardRef emptyBoard (boardSize,1)
+-- O
+-- >>> boardRef (boardPut B emptyBoard (3,3)) (3,3)
 -- B
--- >>> boardRef [[E,B],[W,E]] (1,1)
+-- >>> boardRef (boardPut W emptyBoard (3,3)) (3,3)
+-- W
+-- >>> boardRef (boardPut W emptyBoard (3,3)) (3,2)
 -- E
--- >>> boardRef [[E,B],[W,E]] (1,-1)
--- O
--- >>> boardRef [[E,B],[W,E]] (boardSize,1)
--- O
+
+emptyBoard :: Board
+emptyBoard = replicate boardSize $ replicate boardSize E
+
 boardRef :: Board -> Point -> Color
 boardRef b (row, col) | row < 0 = O
                       | row >= boardSize = O
@@ -41,7 +47,8 @@ boardRef b (row, col) | row < 0 = O
                       | otherwise = b !! row !! col
 
 boardPut :: Color -> Board -> Point -> Board
-boardPut = undefined
+boardPut c b (row, col) = rplcIdx b row $ rplcIdx (b!!row) col c
+    where rplcIdx l n a = let (i, (_:t)) = splitAt n l in i ++ (a:t)
 
 canPut :: GameStatus -> Point -> Bool
 canPut = undefined
