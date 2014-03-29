@@ -80,7 +80,7 @@ getChain b pt = case boardRef b pt of
           case boardRef b p of
             E -> ch{_chainLiberties=S.insert p ls}
             O -> ch
-            c | c == color ->
+            c | c == color && not (p `S.member` ps) ->
                   foldl' getPoints ch{_chainPoints=S.insert p ps} (aroundOf p)
               | otherwise -> ch
 
