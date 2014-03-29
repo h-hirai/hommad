@@ -98,3 +98,4 @@ putStone st@GameStatus{_board=b, _turn=t} p =
     st{_board=boardPut t b p, _turn=next t}
     where next B = W
           next W = B
+          next _ = error ""
