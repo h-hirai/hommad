@@ -1,5 +1,9 @@
 module HomMad where
 
+import Data.Set (Set)
+import qualified Data.Set as S
+import Data.List (foldl')
+
 boardSize :: Int
 boardSize = 9
 
@@ -22,9 +26,17 @@ data GameStatus = GameStatus {
     , _ko :: Maybe Point       -- ^Ko
     } deriving (Show, Eq)
 
+data Chain = Chain {
+      _chainColor :: Color      -- ^Chain color
+    , _chainPoints :: Set Point -- ^Points of the chain stones
+    , _chainLiberties :: Set Point -- ^Points of the chain liberties
+    } deriving (Show, Eq)
 
 emptyBoard :: Board
 emptyBoard = replicate boardSize $ replicate boardSize E
+
+initGame :: GameStatus
+initGame = GameStatus emptyBoard B 0 0 Nothing
 
 -- |
 -- >>> boardRef emptyBoard (1,-1)
@@ -50,6 +62,30 @@ boardRef b (row, col) | row < 0 = O
 boardPut :: Color -> Board -> Point -> Board
 boardPut c b (row, col) = rplcIdx b row $ rplcIdx (b!!row) col c
     where rplcIdx l n a = let (i, (_:t)) = splitAt n l in i ++ (a:t)
+
+-- |
+-- >>> aroundOf (0,0)
+-- [(-1,0),(1,0),(0,-1),(0,1)]
+
+aroundOf :: Point -> [Point]
+aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
+
+getChain :: Board -> Point -> Chain
+getChain b pt = case boardRef b pt of
+                 E -> Chain E S.empty S.empty
+                 O -> Chain O S.empty S.empty
+                 c -> getPoints (Chain c S.empty S.empty) pt
+    where
+      getPoints ch@(Chain color ps ls) p =
+          case boardRef b p of
+            E -> ch{_chainLiberties=S.insert p ls}
+            O -> ch
+            c | c == color ->
+                  foldl' getPoints ch{_chainPoints=S.insert p ps} (aroundOf p)
+              | otherwise -> ch
+
+isAlive :: Chain -> Bool
+isAlive Chain{_chainLiberties=ls} = not (S.null ls)
 
 canPut :: GameStatus -> Point -> Bool
 canPut GameStatus{_board=b} p | boardRef b p == E = True
