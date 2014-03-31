@@ -30,6 +30,7 @@ data Chain = Chain {
       _chainColor :: Color      -- ^Chain color
     , _chainPoints :: Set Point -- ^Points of the chain stones
     , _chainLiberties :: Set Point -- ^Points of the chain liberties
+    , _chainOpponents :: Set Point -- ^Points of the contacting opponents
     } deriving (Show, Eq)
 
 emptyBoard :: Board
@@ -72,16 +73,17 @@ aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
 
 getChain :: Board -> Point -> Chain
 getChain b pt = case boardRef b pt of
-                 E -> Chain E S.empty S.empty
-                 O -> Chain O S.empty S.empty
-                 c -> getPoints (Chain c S.empty S.empty) pt
+                 E -> Chain E S.empty S.empty S.empty
+                 O -> Chain O S.empty S.empty S.empty
+                 c -> getPoints (Chain c S.empty S.empty S.empty) pt
     where
-      getPoints ch@(Chain color ps ls) p =
+      getPoints ch@(Chain color ps ls os) p =
           case boardRef b p of
             E -> ch{_chainLiberties=S.insert p ls}
             O -> ch
             c | c == color && not (p `S.member` ps) ->
                   foldl' getPoints ch{_chainPoints=S.insert p ps} (aroundOf p)
+              | c /= color -> ch{_chainOpponents=S.insert p os}
               | otherwise -> ch
 
 isAlive :: Chain -> Bool
