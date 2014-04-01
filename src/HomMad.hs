@@ -3,6 +3,7 @@ module HomMad where
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.List (foldl')
+import qualified Data.Foldable as F
 
 boardSize :: Int
 boardSize = 9
@@ -90,12 +91,15 @@ isAlive :: Chain -> Bool
 isAlive Chain{_chainLiberties=ls} = not (S.null ls)
 
 canPut :: GameStatus -> Point -> Bool
-canPut st pt = isEmpty && isNotKo (_ko st) && hasLiberty
+canPut st pt = isEmpty && isNotKo (_ko st) && (hasLiberty || canKillOpponent)
     where isEmpty = boardRef (_board st) pt == E
           isNotKo (Just koPt) = koPt /= pt
           isNotKo Nothing     = True
           newBoard = boardPut (_turn st) (_board st) pt
-          hasLiberty = isAlive (getChain newBoard pt)
+          newChain = getChain newBoard pt
+          hasLiberty = isAlive newChain
+          canKillOpponent = F.any (not . isAlive . getChain newBoard)
+                            (_chainOpponents $ newChain)
 
 putStone :: GameStatus -> Point -> GameStatus
 putStone st@GameStatus{_board=b, _turn=t} p =

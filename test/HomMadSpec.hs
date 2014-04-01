@@ -42,5 +42,5 @@ spec = do
       canPut testStatusB (3,3) `shouldBe` True
     it "returns True for the point srrounded by same color stones" $ do
       canPut testStatusB (0,0) `shouldBe` True
-    -- it "returns True if can capture" $ do
-    --   canPut testStatusB (7,2) `shouldBe` True
+    it "returns True if can capture" $ do
+      canPut testStatusB (7,2) `shouldBe` True
