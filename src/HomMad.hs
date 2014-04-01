@@ -102,8 +102,19 @@ canPut st pt = isEmpty && isNotKo (_ko st) && (hasLiberty || canKillOpponent)
                             (_chainOpponents $ newChain)
 
 putStone :: GameStatus -> Point -> GameStatus
-putStone st@GameStatus{_board=b, _turn=t} p =
-    st{_board=boardPut t b p, _turn=next t}
-    where next B = W
-          next W = B
-          next _ = error ""
+putStone (GameStatus b t pb pw _) pt = next t
+    where
+      newBoard' = boardPut t b pt
+      newBoard = S.foldl' (boardPut E) newBoard' captured
+      chain = getChain newBoard' pt
+      captured = F.foldMap (\p -> let ch = getChain newBoard' p in
+                             if isAlive ch then S.empty else _chainPoints ch)
+                 (_chainOpponents chain)
+      ko = if S.size captured == 1 &&
+              S.size (_chainPoints chain) == 1 &&
+              not (isAlive chain)
+           then Just $ S.toList captured !! 0
+           else Nothing
+      next B = GameStatus newBoard W (pb + S.size captured) pw ko
+      next W = GameStatus newBoard B pb (pw + S.size captured) ko
+      next _ = error ""
