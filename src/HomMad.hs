@@ -90,11 +90,12 @@ isAlive :: Chain -> Bool
 isAlive Chain{_chainLiberties=ls} = not (S.null ls)
 
 canPut :: GameStatus -> Point -> Bool
-canPut st pt = boardRef (_board st) pt == E && koCheck (_ko st)
-    where koCheck (Just koPt) = koPt /= pt && libertyCheck
-          koCheck Nothing     = libertyCheck
+canPut st pt = isEmpty && isNotKo (_ko st) && hasLiberty
+    where isEmpty = boardRef (_board st) pt == E
+          isNotKo (Just koPt) = koPt /= pt
+          isNotKo Nothing     = True
           newBoard = boardPut (_turn st) (_board st) pt
-          libertyCheck = isAlive (getChain newBoard pt)
+          hasLiberty = isAlive (getChain newBoard pt)
 
 putStone :: GameStatus -> Point -> GameStatus
 putStone st@GameStatus{_board=b, _turn=t} p =
