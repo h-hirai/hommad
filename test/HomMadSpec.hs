@@ -1,7 +1,7 @@
 module HomMadSpec where
 
 import Test.Hspec
-import HomMad
+import HomMad.Goban
 import qualified Data.Set as S
 
 spec :: Spec

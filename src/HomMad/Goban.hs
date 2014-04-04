@@ -1,4 +1,4 @@
-module HomMad where
+module HomMad.Goban where
 
 import Data.Set (Set)
 import qualified Data.Set as S
