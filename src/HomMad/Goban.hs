@@ -91,15 +91,11 @@ isAlive :: Chain -> Bool
 isAlive Chain{_chainLiberties=ls} = not (S.null ls)
 
 canPut :: GameStatus -> Point -> Bool
-canPut st pt = isEmpty && isNotKo (_ko st) && (hasLiberty || canKillOpponent)
+canPut st pt = isEmpty && isNotKo (_ko st) && hasLibertyOrCanKill
     where isEmpty = boardRef (_board st) pt == E
           isNotKo (Just koPt) = koPt /= pt
           isNotKo Nothing     = True
-          newBoard = boardPut (_turn st) (_board st) pt
-          newChain = getChain newBoard pt
-          hasLiberty = isAlive newChain
-          canKillOpponent = F.any (not . isAlive . getChain newBoard)
-                            (_chainOpponents $ newChain)
+          hasLibertyOrCanKill = isAlive $ getChain (_board $ putStone st pt) pt
 
 putStone :: GameStatus -> Point -> GameStatus
 putStone (GameStatus b t pb pw _) pt = next t
