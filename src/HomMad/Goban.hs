@@ -113,4 +113,9 @@ putStone (GameStatus b t pb pw _) pt = next t
            else Nothing
       next B = GameStatus newBoard W (pb + S.size captured) pw ko
       next W = GameStatus newBoard B pb (pw + S.size captured) ko
-      next _ = error ""
+      next _ = error "putStone"
+
+pass :: GameStatus -> GameStatus
+pass st@GameStatus{_turn=B} = st{_turn=W}
+pass st@GameStatus{_turn=W} = st{_turn=B}
+pass _ = error "pass"
