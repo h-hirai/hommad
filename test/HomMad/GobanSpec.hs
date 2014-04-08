@@ -1,4 +1,4 @@
-module HomMadSpec where
+module HomMad.GobanSpec where
 
 import Test.Hspec
 import HomMad.Goban
