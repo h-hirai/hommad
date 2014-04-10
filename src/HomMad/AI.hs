@@ -2,7 +2,12 @@ module HomMad.AI where
 
 import HomMad.Goban
 import System.Random
+import Data.Set (Set)
 import qualified Data.Set as S
+import qualified Data.Foldable as F
+
+import Debug.Trace (trace)
+
 
 randomSeq :: Int -> [Int]
 randomSeq seed = randomRs (0, maxBound) (mkStdGen seed)
@@ -29,9 +34,9 @@ isSingleSpace b c p =
     boardRef b p == E &&
     all ((\n -> n == c || n == O) . boardRef b) (aroundOf p)
 
-chainsSurrounding :: Board -> Color -> Point -> [Chain]
+chainsSurrounding :: Board -> Color -> Point -> Set Chain
 chainsSurrounding b c p =
-    map (getChain b) $ filter ((==c) . boardRef b) $ aroundOf p
+    S.fromList $ map (getChain b) $ filter ((==c) . boardRef b) $ aroundOf p
 
 isSimpleEye :: Board -> Color -> Point -> Bool
 isSimpleEye b c p = isSingleSpace b c p &&
@@ -40,11 +45,12 @@ isSimpleEye b c p = isSingleSpace b c p &&
                     all (`S.member` ch) rest
 
 isCombinedEye :: Board -> Color -> Point -> Bool
-isCombinedEye b c p = undefined
-
-isEye :: Board -> Color -> Point -> Bool
-isEye b c p =  isSimpleEye b c p || isSharedEye
-    where isSharedEye = undefined
+isCombinedEye b c p = S.size chains == 2 &&
+                      F.any isOtherEye (_chainLiberties $ S.findMax chains)
+    where chains = chainsSurrounding b c p
+          isOtherEye pt = pt /= p &&
+                          isSingleSpace b c pt &&
+                          chainsSurrounding b c pt == chains
 
 count :: Board -> (Int, Int)
 count b = (count' B, count' W)

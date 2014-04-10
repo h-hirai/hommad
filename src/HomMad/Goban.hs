@@ -13,7 +13,7 @@ data Color = B -- ^Black
            | W -- ^White
            | E -- ^Empty
            | O -- ^Out Of Boad
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 type Board = [[Color]]
 
@@ -32,7 +32,7 @@ data Chain = Chain {
     , _chainPoints :: Set Point -- ^Points of the chain stones
     , _chainLiberties :: Set Point -- ^Points of the chain liberties
     , _chainOpponents :: Set Point -- ^Points of the contacting opponents
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Ord)
 
 emptyBoard :: Board
 emptyBoard = replicate boardSize $ replicate boardSize E
