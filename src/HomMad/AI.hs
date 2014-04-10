@@ -2,6 +2,7 @@ module HomMad.AI where
 
 import HomMad.Goban
 import System.Random
+import qualified Data.Set as S
 
 randomSeq :: Int -> [Int]
 randomSeq seed = randomRs (0, maxBound) (mkStdGen seed)
@@ -22,6 +23,28 @@ playout [] _ = error "playout"
 
 pointsCanPut :: GameStatus -> [Point]
 pointsCanPut st = filter (canPut st) allPoints
+
+isSingleSpace :: Board -> Color -> Point -> Bool
+isSingleSpace b c p =
+    boardRef b p == E &&
+    all ((\n -> n == c || n == O) . boardRef b) (aroundOf p)
+
+chainsSurrounding :: Board -> Color -> Point -> [Chain]
+chainsSurrounding b c p =
+    map (getChain b) $ filter ((==c) . boardRef b) $ aroundOf p
+
+isSimpleEye :: Board -> Color -> Point -> Bool
+isSimpleEye b c p = isSingleSpace b c p &&
+                    let (p1:rest) = filter ((==c).(boardRef b)) $ aroundOf p
+                        ch = _chainPoints $ getChain b p1 in
+                    all (`S.member` ch) rest
+
+isCombinedEye :: Board -> Color -> Point -> Bool
+isCombinedEye b c p = undefined
+
+isEye :: Board -> Color -> Point -> Bool
+isEye b c p =  isSimpleEye b c p || isSharedEye
+    where isSharedEye = undefined
 
 count :: Board -> (Int, Int)
 count b = (count' B, count' W)
