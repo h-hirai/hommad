@@ -6,9 +6,6 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.Foldable as F
 
-import Debug.Trace (trace)
-
-
 randomSeq :: Int -> [Int]
 randomSeq seed = randomRs (0, maxBound) (mkStdGen seed)
 
