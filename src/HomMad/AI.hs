@@ -24,7 +24,10 @@ playout (r:rs) st = if null candidates
 playout [] _ = error "playout"
 
 pointsCanPut :: GameStatus -> [Point]
-pointsCanPut st = filter (canPut st) allPoints
+pointsCanPut st@GameStatus{_board=b, _turn=c} =
+    filter (\p -> canPut st p &&
+                  not (isSimpleEye b c p) &&
+                  not (isCombinedEye b c p)) allPoints
 
 isSingleSpace :: Board -> Color -> Point -> Bool
 isSingleSpace b c p =
