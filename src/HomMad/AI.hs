@@ -50,7 +50,8 @@ isSimpleEye b c p = isSingleSpace b c p &&
                     all (`S.member` ch) rest
 
 isCombinedEye :: Board -> Color -> Point -> Bool
-isCombinedEye b c p = S.size chains == 2 &&
+isCombinedEye b c p = isSingleSpace b c p &&
+                      S.size chains == 2 &&
                       F.any isOtherEye (_chainLiberties $ S.findMax chains)
     where chains = chainsSurrounding b c p
           isOtherEye pt = pt /= p &&
