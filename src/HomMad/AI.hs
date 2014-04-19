@@ -16,12 +16,17 @@ winningRate :: [Int] -> GameStatus -> Point -> (Rational, [Int])
 winningRate = undefined
 
 playout :: [Int] -> GameStatus -> (Board, [Int])
-playout (r:rs) st = if null candidates
-                    then (_board st, rs)
-                    else let c = candidates !! (r `mod` length candidates)
-                         in playout rs $ putStone st c
-    where candidates = pointsCanPut st
-playout [] _ = error "playout"
+playout = playout' False
+    where
+      playout' passed (r:rs) st =
+          let candidates = pointsCanPut st
+              c = candidates !! (r `mod` length candidates) in
+          if null candidates
+          then if passed
+               then (_board st, rs)
+               else playout' True (r:rs) (pass st)
+          else playout' False rs $ putStone st c
+      playout' _ [] _ = error "playout"
 
 pointsCanPut :: GameStatus -> [Point]
 pointsCanPut st@GameStatus{_board=b, _turn=c} =
