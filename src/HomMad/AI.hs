@@ -6,6 +6,8 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.Foldable as F
 import Data.Ratio (Ratio, (%))
+import Data.List (maximumBy)
+import Data.Ord (comparing)
 
 komi :: Int
 komi = 7
@@ -13,8 +15,12 @@ komi = 7
 randomSeq :: Int -> [Int]
 randomSeq seed = randomRs (0, maxBound) (mkStdGen seed)
 
-move :: [Int] -> GameStatus -> GameStatus
-move = undefined
+move :: Int -> GameStatus -> GameStatus
+move seed st = putStone st result
+    where candidates = filter (canPut st) allPoints
+          candsAndSeeds = zip candidates $ randomSeq seed
+          getRate (cand, s) = winningRateOfAPoint s 100 st cand
+          (result, _) = maximumBy (comparing getRate) candsAndSeeds
 
 winningRateOfAPoint :: Int -> Int -> GameStatus -> Point -> Ratio Int
 winningRateOfAPoint seed n st pt =
