@@ -15,15 +15,20 @@ move = undefined
 winningRate :: [Int] -> GameStatus -> Point -> (Rational, [Int])
 winningRate = undefined
 
-playout :: [Int] -> GameStatus -> (Board, [Int])
-playout = playout' False
+playoutsOfAPoint :: Int -> Int -> GameStatus -> Point -> [Board]
+playoutsOfAPoint seed n st pt = map (flip playout st') seeds
+    where seeds = take n $ randomSeq seed
+          st' = putStone st pt
+
+playout :: Int -> GameStatus -> Board
+playout seed = playout' False $ randomSeq seed
     where
       playout' passed (r:rs) st =
           let candidates = pointsCanPut st
               c = candidates !! (r `mod` length candidates) in
           if null candidates
           then if passed
-               then (_board st, rs)
+               then _board st
                else playout' True (r:rs) (pass st)
           else playout' False rs $ putStone st c
       playout' _ [] _ = error "playout"
