@@ -25,12 +25,12 @@ playout seed = playout' False $ randomSeq seed
     where
       playout' passed (r:rs) st =
           let candidates = pointsCanPut st
-              c = candidates !! (r `mod` length candidates) in
+              cand = candidates !! (r `mod` length candidates) in
           if null candidates
           then if passed
                then _board st
                else playout' True (r:rs) (pass st)
-          else playout' False rs $ putStone st c
+          else playout' False rs $ putStone st cand
       playout' _ [] _ = error "playout"
 
 pointsCanPut :: GameStatus -> [Point]
