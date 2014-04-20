@@ -5,6 +5,10 @@ import System.Random
 import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.Foldable as F
+import Data.Ratio (Ratio, (%))
+
+komi :: Int
+komi = 7
 
 randomSeq :: Int -> [Int]
 randomSeq seed = randomRs (0, maxBound) (mkStdGen seed)
@@ -12,8 +16,13 @@ randomSeq seed = randomRs (0, maxBound) (mkStdGen seed)
 move :: [Int] -> GameStatus -> GameStatus
 move = undefined
 
-winningRate :: [Int] -> GameStatus -> Point -> (Rational, [Int])
-winningRate = undefined
+winningRateOfAPoint :: Int -> Int -> GameStatus -> Point -> Ratio Int
+winningRateOfAPoint seed n st pt =
+    (length $ filter (win $ _turn st) results) % n
+    where results = map count $ playoutsOfAPoint seed n st pt
+          win B (b, w) = b > w + komi
+          win W (b, w) = b <= w + komi
+          win _ _ = error "winningRateOfAPoint"
 
 playoutsOfAPoint :: Int -> Int -> GameStatus -> Point -> [Board]
 playoutsOfAPoint seed n st pt = map (flip playout st') seeds
