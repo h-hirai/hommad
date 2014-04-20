@@ -63,7 +63,8 @@ count b = (count' B, count' W)
     where count' c = length $ filter (areaOf c) allPoints
           areaOf c pt = stone c pt || eye c pt
           stone c pt = boardRef b pt == c
-          eye c pt = c `elem` [boardRef b p | p <- aroundOf pt]
+          eye c pt = boardRef b pt == E &&
+                     c `elem` [boardRef b p | p <- aroundOf pt]
 
 allPoints :: [Point]
 allPoints = [(row, col) | row <- [0..boardSize-1], col <- [0..boardSize-1]]

@@ -51,5 +51,11 @@ spec = do
   describe "pointsCanPut" $ do
     it "is finish" $ do
       pointsCanPut initGame{_board=testBoardB, _turn=B} `shouldBe` []
-    it "is last" $ do
+    it "is last 1" $ do
       pointsCanPut initGame{_board=testBoardB, _turn=W} `shouldBe` [(0,5)]
+
+  let testBoardC = _board $ putStone initGame{_board=testBoardB, _turn=W} (0,5)
+
+  describe "count" $ do
+    it "is (32,49)" $ do
+      count testBoardC `shouldBe` (4+4+4+5+7+5+2+1+0, 5+5+5+4+2+4+7+8+9)
