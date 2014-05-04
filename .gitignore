@@ -5,3 +5,4 @@
 Setup.hs
 cabal.sandbox.config
 dist/
+*.prof
