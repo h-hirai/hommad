@@ -17,21 +17,21 @@ data Color = B -- ^Black
 
 type Board = [[Color]]
 
-type Point = (Int, Int)
+type Coord = (Int, Int)
 
 data GameStatus = GameStatus {
       _board :: Board          -- ^Board status
     , _turn :: Color           -- ^Turn
     , _prisonersB :: Int       -- ^Captured by Black
     , _prisonersW :: Int       -- ^Captured by White
-    , _ko :: Maybe Point       -- ^Ko
+    , _ko :: Maybe Coord       -- ^Ko
     } deriving (Show, Eq)
 
 data Chain = Chain {
       _chainColor :: Color      -- ^Chain color
-    , _chainPoints :: Set Point -- ^Points of the chain stones
-    , _chainLiberties :: Set Point -- ^Points of the chain liberties
-    , _chainOpponents :: Set Point -- ^Points of the contacting opponents
+    , _chainCoords :: Set Coord -- ^Coords of the chain stones
+    , _chainLiberties :: Set Coord -- ^Coords of the chain liberties
+    , _chainOpponents :: Set Coord -- ^Coords of the contacting opponents
     } deriving (Show, Eq, Ord)
 
 emptyBoard :: Board
@@ -46,7 +46,7 @@ initGame = GameStatus emptyBoard B 0 0 Nothing
 -- >>> boardRef emptyBoard (boardSize,1)
 -- O
 
-boardRef :: Board -> Point -> Color
+boardRef :: Board -> Coord -> Color
 boardRef b (row, col) | row < 0 = O
                       | row >= boardSize = O
                       | col < 0 = O
@@ -61,7 +61,7 @@ boardRef b (row, col) | row < 0 = O
 -- >>> boardRef (boardPut W emptyBoard (3,3)) (3,2)
 -- E
 
-boardPut :: Color -> Board -> Point -> Board
+boardPut :: Color -> Board -> Coord -> Board
 boardPut c b (row, col) = rplcIdx b row $ rplcIdx (b!!row) col c
     where rplcIdx l n a = let (i, (_:t)) = splitAt n l in i ++ (a:t)
 
@@ -69,45 +69,45 @@ boardPut c b (row, col) = rplcIdx b row $ rplcIdx (b!!row) col c
 -- >>> aroundOf (0,0)
 -- [(-1,0),(1,0),(0,-1),(0,1)]
 
-aroundOf :: Point -> [Point]
+aroundOf :: Coord -> [Coord]
 aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
 
-getChain :: Board -> Point -> Chain
+getChain :: Board -> Coord -> Chain
 getChain b pt = case boardRef b pt of
                  E -> Chain E S.empty S.empty S.empty
                  O -> Chain O S.empty S.empty S.empty
-                 c -> getPoints (Chain c S.empty S.empty S.empty) pt
+                 c -> getCoords (Chain c S.empty S.empty S.empty) pt
     where
-      getPoints ch@(Chain color ps ls os) p =
+      getCoords ch@(Chain color ps ls os) p =
           case boardRef b p of
             E -> ch{_chainLiberties=S.insert p ls}
             O -> ch
             c | c == color && not (p `S.member` ps) ->
-                  foldl' getPoints ch{_chainPoints=S.insert p ps} (aroundOf p)
+                  foldl' getCoords ch{_chainCoords=S.insert p ps} (aroundOf p)
               | c /= color -> ch{_chainOpponents=S.insert p os}
               | otherwise -> ch
 
 isAlive :: Chain -> Bool
 isAlive Chain{_chainLiberties=ls} = not (S.null ls)
 
-canPut :: GameStatus -> Point -> Bool
+canPut :: GameStatus -> Coord -> Bool
 canPut st pt = isEmpty && isNotKo (_ko st) && hasLibertyOrCanKill
     where isEmpty = boardRef (_board st) pt == E
           isNotKo (Just koPt) = koPt /= pt
           isNotKo Nothing     = True
           hasLibertyOrCanKill = isAlive $ getChain (_board $ putStone st pt) pt
 
-putStone :: GameStatus -> Point -> GameStatus
+putStone :: GameStatus -> Coord -> GameStatus
 putStone (GameStatus b t pb pw _) pt = next t
     where
       newBoard' = boardPut t b pt
       newBoard = S.foldl' (boardPut E) newBoard' captured
       chain = getChain newBoard' pt
       captured = F.foldMap (\p -> let ch = getChain newBoard' p in
-                             if isAlive ch then S.empty else _chainPoints ch)
+                             if isAlive ch then S.empty else _chainCoords ch)
                  (_chainOpponents chain)
       ko = if S.size captured == 1 &&
-              S.size (_chainPoints chain) == 1 &&
+              S.size (_chainCoords chain) == 1 &&
               not (isAlive chain)
            then Just $ S.toList captured !! 0
            else Nothing
