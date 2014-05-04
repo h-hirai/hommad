@@ -4,17 +4,22 @@ import Test.Hspec
 import HomMad.Goban
 import qualified Data.Set as S
 
+e, b, w :: Point Color
+e = Empty
+b = Point Black
+w = Point White
+
 spec :: Spec
 spec = do
-  let testBoard = [[E,W,E,E,E,E,E,E,E]
-                  ,[W,E,E,E,E,E,E,E,E]
-                  ,[E,E,E,E,E,E,E,E,E]
-                  ,[E,E,E,E,E,E,E,E,E]
-                  ,[E,E,E,E,E,E,E,E,E]
-                  ,[E,W,W,W,E,E,E,E,E]
-                  ,[E,W,B,W,E,E,E,E,E]
-                  ,[E,B,E,B,E,E,E,E,E]
-                  ,[E,B,B,B,E,E,E,E,E]]
+  let testBoard = [[e,w,e,e,e,e,e,e,e]
+                  ,[w,e,e,e,e,e,e,e,e]
+                  ,[e,e,e,e,e,e,e,e,e]
+                  ,[e,e,e,e,e,e,e,e,e]
+                  ,[e,e,e,e,e,e,e,e,e]
+                  ,[e,w,w,w,e,e,e,e,e]
+                  ,[e,w,b,w,e,e,e,e,e]
+                  ,[e,b,e,b,e,e,e,e,e]
+                  ,[e,b,b,b,e,e,e,e,e]]
 
   describe "getChain" $ do
     let chain1 = getChain testBoard (6,2)
@@ -33,7 +38,7 @@ spec = do
       _chainOpponents chain2 `shouldBe` S.fromList [(6,1),(6,3)]
 
   describe "canPut" $ do
-    let testStatusB = GameStatus testBoard W 0 0 Nothing
+    let testStatusB = GameStatus testBoard White 0 0 Nothing
     it "returns False for on a stone" $ do
       canPut testStatusB (5,1) `shouldBe` False
     it "returns False for out of a board" $ do

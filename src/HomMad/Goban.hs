@@ -9,13 +9,16 @@ boardSize :: Int
 boardSize = 9
 
 -- |Status of a point on a board.
-data Color = B -- ^Black
-           | W -- ^White
-           | E -- ^Empty
-           | O -- ^Out Of Boad
+data Point a = Point a
+             | Empty
+             | OutOfBoard
     deriving (Show, Eq, Ord)
 
-type Board = [[Color]]
+data Color = Black
+           | White
+    deriving (Show, Eq, Ord)
+
+type Board = [[Point Color]]
 
 type Coord = (Int, Int)
 
@@ -34,10 +37,10 @@ data Chain = Chain {
     } deriving (Show, Eq, Ord)
 
 emptyBoard :: Board
-emptyBoard = replicate boardSize $ replicate boardSize E
+emptyBoard = replicate boardSize $ replicate boardSize Empty
 
 initGame :: GameStatus
-initGame = GameStatus emptyBoard B 0 0 Nothing
+initGame = GameStatus emptyBoard Black 0 0 Nothing
 
 -- |
 -- >>> boardRef emptyBoard (1,-1)
@@ -45,11 +48,11 @@ initGame = GameStatus emptyBoard B 0 0 Nothing
 -- >>> boardRef emptyBoard (boardSize,1)
 -- O
 
-boardRef :: Board -> Coord -> Color
-boardRef b (row, col) | row < 0 = O
-                      | row >= boardSize = O
-                      | col < 0 = O
-                      | col >= boardSize = O
+boardRef :: Board -> Coord -> Point Color
+boardRef b (row, col) | row < 0 = OutOfBoard
+                      | row >= boardSize = OutOfBoard
+                      | col < 0 = OutOfBoard
+                      | col >= boardSize = OutOfBoard
                       | otherwise = b !! row !! col
 
 -- |
@@ -60,7 +63,7 @@ boardRef b (row, col) | row < 0 = O
 -- >>> boardRef (boardPut W emptyBoard (3,3)) (3,2)
 -- E
 
-boardPut :: Color -> Board -> Coord -> Board
+boardPut :: Point Color -> Board -> Coord -> Board
 boardPut c b (row, col) = rplcIdx b row $ rplcIdx (b!!row) col c
     where rplcIdx l n a = let (i, (_:t)) = splitAt n l in i ++ (a:t)
 
@@ -73,15 +76,15 @@ aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
 
 getChain :: Board -> Coord -> Chain
 getChain b pt = case color of
-                 E -> Chain S.empty S.empty S.empty
-                 O -> Chain S.empty S.empty S.empty
+                 Empty -> Chain S.empty S.empty S.empty
+                 OutOfBoard -> Chain S.empty S.empty S.empty
                  _ -> getCoords (Chain S.empty S.empty S.empty) pt
     where
       color = boardRef b pt
       getCoords ch@(Chain ps ls os) p =
           case boardRef b p of
-            E -> ch{_chainLiberties=S.insert p ls}
-            O -> ch
+            Empty -> ch{_chainLiberties=S.insert p ls}
+            OutOfBoard -> ch
             c | c == color && not (p `S.member` ps) ->
                   foldl' getCoords ch{_chainCoords=S.insert p ps} (aroundOf p)
               | c /= color -> ch{_chainOpponents=S.insert p os}
@@ -92,7 +95,7 @@ isAlive Chain{_chainLiberties=ls} = not (S.null ls)
 
 canPut :: GameStatus -> Coord -> Bool
 canPut st pt = isEmpty && isNotKo (_ko st) && hasLibertyOrCanKill
-    where isEmpty = boardRef (_board st) pt == E
+    where isEmpty = boardRef (_board st) pt == Empty
           isNotKo (Just koPt) = koPt /= pt
           isNotKo Nothing     = True
           hasLibertyOrCanKill = isAlive $ getChain (_board $ putStone st pt) pt
@@ -100,8 +103,8 @@ canPut st pt = isEmpty && isNotKo (_ko st) && hasLibertyOrCanKill
 putStone :: GameStatus -> Coord -> GameStatus
 putStone (GameStatus b t pb pw _) pt = next t
     where
-      newBoard' = boardPut t b pt
-      newBoard = S.foldl' (boardPut E) newBoard' captured
+      newBoard' = boardPut (Point t) b pt
+      newBoard = S.foldl' (boardPut Empty) newBoard' captured
       chain = getChain newBoard' pt
       captured = F.foldMap (\p -> let ch = getChain newBoard' p in
                              if isAlive ch then S.empty else _chainCoords ch)
@@ -111,11 +114,9 @@ putStone (GameStatus b t pb pw _) pt = next t
               not (isAlive chain)
            then Just $ S.toList captured !! 0
            else Nothing
-      next B = GameStatus newBoard W (pb + S.size captured) pw ko
-      next W = GameStatus newBoard B pb (pw + S.size captured) ko
-      next _ = error "putStone"
+      next Black = GameStatus newBoard White (pb + S.size captured) pw ko
+      next White = GameStatus newBoard Black pb (pw + S.size captured) ko
 
 pass :: GameStatus -> GameStatus
-pass st@GameStatus{_turn=B} = st{_turn=W}
-pass st@GameStatus{_turn=W} = st{_turn=B}
-pass _ = error "pass"
+pass st@GameStatus{_turn=Black} = st{_turn=White}
+pass st@GameStatus{_turn=White} = st{_turn=Black}
