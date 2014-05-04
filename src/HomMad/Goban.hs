@@ -27,8 +27,6 @@ type Coord = (Int, Int)
 data GameStatus = GameStatus {
       _board :: Board Color    -- ^Board status
     , _turn :: Color           -- ^Turn
-    , _prisonersB :: Int       -- ^Captured by Black
-    , _prisonersW :: Int       -- ^Captured by White
     , _ko :: Maybe Coord       -- ^Ko
     } deriving (Show, Eq)
 
@@ -42,7 +40,7 @@ emptyBoard :: Board a
 emptyBoard = IM.empty
 
 initGame :: GameStatus
-initGame = GameStatus emptyBoard Black 0 0 Nothing
+initGame = GameStatus emptyBoard Black Nothing
 
 -- |
 -- >>> boardRef emptyBoard (1,-1)
@@ -98,7 +96,7 @@ canPut st pt = isEmpty && isNotKo (_ko st) && hasLibertyOrCanKill
           hasLibertyOrCanKill = isAlive $ getChain (_board $ putStone st pt) pt
 
 putStone :: GameStatus -> Coord -> GameStatus
-putStone (GameStatus b t pb pw _) pt = next t
+putStone (GameStatus b t _) pt = next t
     where
       newBoard' = boardPut t b pt
       newBoard = S.foldl' boardRemove newBoard' captured
@@ -111,8 +109,8 @@ putStone (GameStatus b t pb pw _) pt = next t
               not (isAlive chain)
            then Just $ S.toList captured !! 0
            else Nothing
-      next Black = GameStatus newBoard White (pb + S.size captured) pw ko
-      next White = GameStatus newBoard Black pb (pw + S.size captured) ko
+      next Black = GameStatus newBoard White ko
+      next White = GameStatus newBoard Black ko
 
 pass :: GameStatus -> GameStatus
 pass st@GameStatus{_turn=Black} = st{_turn=White}
