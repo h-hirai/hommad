@@ -28,8 +28,7 @@ data GameStatus = GameStatus {
     } deriving (Show, Eq)
 
 data Chain = Chain {
-      _chainColor :: Color      -- ^Chain color
-    , _chainCoords :: Set Coord -- ^Coords of the chain stones
+      _chainCoords :: Set Coord -- ^Coords of the chain stones
     , _chainLiberties :: Set Coord -- ^Coords of the chain liberties
     , _chainOpponents :: Set Coord -- ^Coords of the contacting opponents
     } deriving (Show, Eq, Ord)
@@ -73,12 +72,13 @@ aroundOf :: Coord -> [Coord]
 aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
 
 getChain :: Board -> Coord -> Chain
-getChain b pt = case boardRef b pt of
-                 E -> Chain E S.empty S.empty S.empty
-                 O -> Chain O S.empty S.empty S.empty
-                 c -> getCoords (Chain c S.empty S.empty S.empty) pt
+getChain b pt = case color of
+                 E -> Chain S.empty S.empty S.empty
+                 O -> Chain S.empty S.empty S.empty
+                 _ -> getCoords (Chain S.empty S.empty S.empty) pt
     where
-      getCoords ch@(Chain color ps ls os) p =
+      color = boardRef b pt
+      getCoords ch@(Chain ps ls os) p =
           case boardRef b p of
             E -> ch{_chainLiberties=S.insert p ls}
             O -> ch
