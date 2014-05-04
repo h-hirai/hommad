@@ -3,23 +3,29 @@ module HomMad.GobanSpec where
 import Test.Hspec
 import HomMad.Goban
 import qualified Data.Set as S
+import qualified Data.IntMap as IM
 
-e, b, w :: Point Color
-e = Empty
-b = Point Black
-w = Point White
+data PointSym = E | B | W
+
+makeBoard :: [PointSym] -> Board Color
+makeBoard syms = IM.fromList $ map g $ filter f $ zip [0..] syms
+    where f (_, E) = False
+          f _      = True
+          g (idx, B) = (idx, Black)
+          g (idx, W) = (idx, White)
+          g _ = error "makeBoard"
 
 spec :: Spec
 spec = do
-  let testBoard = [[e,w,e,e,e,e,e,e,e]
-                  ,[w,e,e,e,e,e,e,e,e]
-                  ,[e,e,e,e,e,e,e,e,e]
-                  ,[e,e,e,e,e,e,e,e,e]
-                  ,[e,e,e,e,e,e,e,e,e]
-                  ,[e,w,w,w,e,e,e,e,e]
-                  ,[e,w,b,w,e,e,e,e,e]
-                  ,[e,b,e,b,e,e,e,e,e]
-                  ,[e,b,b,b,e,e,e,e,e]]
+  let testBoard = makeBoard [E,W,E,E,E,E,E,E,E
+                            ,W,E,E,E,E,E,E,E,E
+                            ,E,E,E,E,E,E,E,E,E
+                            ,E,E,E,E,E,E,E,E,E
+                            ,E,E,E,E,E,E,E,E,E
+                            ,E,W,W,W,E,E,E,E,E
+                            ,E,W,B,W,E,E,E,E,E
+                            ,E,B,E,B,E,E,E,E,E
+                            ,E,B,B,B,E,E,E,E,E]
 
   describe "getChain" $ do
     let chain1 = getChain testBoard (6,2)

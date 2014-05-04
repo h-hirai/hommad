@@ -29,12 +29,12 @@ winningRateOfACoord seed n st pt =
           win Black (b, w) = b > w + komi
           win White (b, w) = b <= w + komi
 
-playoutsOfACoord :: Int -> Int -> GameStatus -> Coord -> [Board]
+playoutsOfACoord :: Int -> Int -> GameStatus -> Coord -> [Board Color]
 playoutsOfACoord seed n st pt = map (flip playout st') seeds
     where seeds = take n $ randomSeq seed
           st' = putStone st pt
 
-playout :: Int -> GameStatus -> Board
+playout :: Int -> GameStatus -> Board Color
 playout seed = playout' False $ randomSeq seed
     where
       playout' passed (r:rs) st =
@@ -53,24 +53,24 @@ pointsCanPut st@GameStatus{_board=b, _turn=c} =
                   not (isSimpleEye b c p) &&
                   not (isCombinedEye b c p)) allCoords
 
-isSingleSpace :: Board -> Color -> Coord -> Bool
+isSingleSpace :: Board Color -> Color -> Coord -> Bool
 isSingleSpace b c p =
     boardRef b p == Empty &&
     all ((\n -> n == Point c || n == OutOfBoard) . boardRef b) (aroundOf p)
 
-chainsSurrounding :: Board -> Color -> Coord -> Set Chain
+chainsSurrounding :: Board Color -> Color -> Coord -> Set Chain
 chainsSurrounding b c p =
     S.fromList $
     map (getChain b) $ filter ((== Point c) . boardRef b) $ aroundOf p
 
-isSimpleEye :: Board -> Color -> Coord -> Bool
+isSimpleEye :: Board Color -> Color -> Coord -> Bool
 isSimpleEye b c p =
     isSingleSpace b c p &&
     let (p1:rest) = filter ((==Point c).(boardRef b)) $ aroundOf p
         ch = _chainCoords $ getChain b p1 in
     all (`S.member` ch) rest
 
-isCombinedEye :: Board -> Color -> Coord -> Bool
+isCombinedEye :: Board Color -> Color -> Coord -> Bool
 isCombinedEye b c p = isSingleSpace b c p &&
                       S.size chains == 2 &&
                       F.any isOtherEye (_chainLiberties $ S.findMax chains)
@@ -79,7 +79,7 @@ isCombinedEye b c p = isSingleSpace b c p &&
                           isSingleSpace b c pt &&
                           chainsSurrounding b c pt == chains
 
-count :: Board -> (Int, Int)
+count :: Board Color -> (Int, Int)
 count b = (count' Black, count' White)
     where count' c = length $ filter (areaOf c) allCoords
           areaOf c pt = stone c pt || eye c pt

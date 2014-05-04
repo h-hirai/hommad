@@ -1,5 +1,7 @@
 module HomMad.Goban where
 
+import Data.IntMap (IntMap)
+import qualified Data.IntMap as IM
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.List (foldl')
@@ -18,12 +20,12 @@ data Color = Black
            | White
     deriving (Show, Eq, Ord)
 
-type Board = [[Point Color]]
+type Board a = IntMap a
 
 type Coord = (Int, Int)
 
 data GameStatus = GameStatus {
-      _board :: Board          -- ^Board status
+      _board :: Board Color    -- ^Board status
     , _turn :: Color           -- ^Turn
     , _prisonersB :: Int       -- ^Captured by Black
     , _prisonersW :: Int       -- ^Captured by White
@@ -36,8 +38,8 @@ data Chain = Chain {
     , _chainOpponents :: Set Coord -- ^Coords of the contacting opponents
     } deriving (Show, Eq, Ord)
 
-emptyBoard :: Board
-emptyBoard = replicate boardSize $ replicate boardSize Empty
+emptyBoard :: Board a
+emptyBoard = IM.empty
 
 initGame :: GameStatus
 initGame = GameStatus emptyBoard Black 0 0 Nothing
@@ -48,24 +50,19 @@ initGame = GameStatus emptyBoard Black 0 0 Nothing
 -- >>> boardRef emptyBoard (boardSize,1)
 -- O
 
-boardRef :: Board -> Coord -> Point Color
-boardRef b (row, col) | row < 0 = OutOfBoard
-                      | row >= boardSize = OutOfBoard
-                      | col < 0 = OutOfBoard
-                      | col >= boardSize = OutOfBoard
-                      | otherwise = b !! row !! col
+boardRef :: Board a -> Coord -> Point a
+boardRef b (row, col)
+    | row < 0 = OutOfBoard
+    | row >= boardSize = OutOfBoard
+    | col < 0 = OutOfBoard
+    | col >= boardSize = OutOfBoard
+    | otherwise = maybe Empty Point $ IM.lookup (row*boardSize + col) b
 
--- |
--- >>> boardRef (boardPut B emptyBoard (3,3)) (3,3)
--- B
--- >>> boardRef (boardPut W emptyBoard (3,3)) (3,3)
--- W
--- >>> boardRef (boardPut W emptyBoard (3,3)) (3,2)
--- E
+boardPut :: a -> Board a -> Coord -> Board a
+boardPut a b (row, col) = IM.insert (row*boardSize + col) a b
 
-boardPut :: Point Color -> Board -> Coord -> Board
-boardPut c b (row, col) = rplcIdx b row $ rplcIdx (b!!row) col c
-    where rplcIdx l n a = let (i, (_:t)) = splitAt n l in i ++ (a:t)
+boardRemove :: Board a -> Coord -> Board a
+boardRemove b (row, col) = IM.delete (row*boardSize + col) b
 
 -- |
 -- >>> aroundOf (0,0)
@@ -74,7 +71,7 @@ boardPut c b (row, col) = rplcIdx b row $ rplcIdx (b!!row) col c
 aroundOf :: Coord -> [Coord]
 aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
 
-getChain :: Board -> Coord -> Chain
+getChain :: Board Color -> Coord -> Chain
 getChain b pt = case color of
                  Empty -> Chain S.empty S.empty S.empty
                  OutOfBoard -> Chain S.empty S.empty S.empty
@@ -103,8 +100,8 @@ canPut st pt = isEmpty && isNotKo (_ko st) && hasLibertyOrCanKill
 putStone :: GameStatus -> Coord -> GameStatus
 putStone (GameStatus b t pb pw _) pt = next t
     where
-      newBoard' = boardPut (Point t) b pt
-      newBoard = S.foldl' (boardPut Empty) newBoard' captured
+      newBoard' = boardPut t b pt
+      newBoard = S.foldl' boardRemove newBoard' captured
       chain = getChain newBoard' pt
       captured = F.foldMap (\p -> let ch = getChain newBoard' p in
                              if isAlive ch then S.empty else _chainCoords ch)

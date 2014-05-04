@@ -3,23 +3,29 @@ module HomMad.AISpec where
 import Test.Hspec
 import HomMad.Goban
 import HomMad.AI
+import qualified Data.IntMap as IM
 
-e, b, w :: Point Color
-e = Empty
-b = Point Black
-w = Point White
+data PointSym = E | B | W
+
+makeBoard :: [PointSym] -> Board Color
+makeBoard = IM.fromList . map g . filter f . zip [0..]
+    where f (_, E) = False
+          f _      = True
+          g (idx, B) = (idx, Black)
+          g (idx, W) = (idx, White)
+          g _ = error "makeBoard"
 
 spec :: Spec
 spec = do
-  let testBoardA = [[e,e,w,e,w,w,e,w,e]
-                   ,[e,e,w,w,w,e,w,w,w]
-                   ,[e,e,b,b,e,e,e,e,e]
-                   ,[e,e,b,e,b,b,e,e,e]
-                   ,[e,e,e,b,e,b,e,e,e]
-                   ,[e,e,e,b,b,b,e,e,e]
-                   ,[b,b,b,e,e,e,e,e,e]
-                   ,[b,e,b,e,e,e,e,e,w]
-                   ,[e,b,e,e,e,e,e,w,e]]
+  let testBoardA = makeBoard [E,E,W,E,W,W,E,W,E
+                             ,E,E,W,W,W,E,W,W,W
+                             ,E,E,B,B,E,E,E,E,E
+                             ,E,E,B,E,B,B,E,E,E
+                             ,E,E,E,B,E,B,E,E,E
+                             ,E,E,E,B,B,B,E,E,E
+                             ,B,B,B,E,E,E,E,E,E
+                             ,B,E,B,E,E,E,E,E,W
+                             ,E,B,E,E,E,E,E,W,E]
 
   describe "isEye" $ do
     it "is simple eye" $ do
@@ -37,15 +43,15 @@ spec = do
     it "is combined eye" $ do
       isCombinedEye testBoardA Black (8,0) `shouldBe` True
 
-  let testBoardB = [[w,w,w,w,w,e,b,w,w]
-                   ,[w,e,w,w,e,w,w,b,w]
-                   ,[w,w,w,e,w,w,b,b,w]
-                   ,[b,b,b,w,w,b,b,w,w]
-                   ,[b,b,b,b,b,b,b,w,w]
-                   ,[b,b,b,b,b,w,w,w,e]
-                   ,[b,b,b,b,w,w,w,e,w]
-                   ,[b,e,b,b,w,w,w,w,e]
-                   ,[e,b,e,b,w,e,w,w,w]]
+  let testBoardB = makeBoard [W,W,W,W,W,E,B,W,W
+                             ,W,E,W,W,E,W,W,B,W
+                             ,W,W,W,E,W,W,B,B,W
+                             ,B,B,B,W,W,B,B,W,W
+                             ,B,B,B,B,B,B,B,W,W
+                             ,B,B,B,B,B,W,W,W,E
+                             ,B,B,B,B,W,W,W,E,W
+                             ,B,E,B,B,W,W,W,W,E
+                             ,E,B,E,B,W,E,W,W,W]
 
   describe "isSimpleEye" $ do
     it "is not SimpleEye" $ do
