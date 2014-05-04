@@ -22,7 +22,7 @@ library
   build-depends:       base >=4.6 && <4.7, containers, random
   hs-source-dirs:      src
   default-language:    Haskell2010
-  ghc-options:          -Wall
+  ghc-options:         -Wall -O2
 
 test-suite spec
   type:                 exitcode-stdio-1.0
@@ -41,7 +41,7 @@ benchmark bench-playout
   type:                 exitcode-stdio-1.0
   default-language:     Haskell2010
   hs-source-dirs:       bench
-  ghc-options:          -Wall
+  ghc-options:          -Wall -O2
   main-is:              bench-playout.hs
   build-depends:        base
                       , time
