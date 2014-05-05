@@ -20,6 +20,10 @@ data Color = Black
            | White
     deriving (Show, Eq, Ord)
 
+opponent :: Color -> Color
+opponent Black = White
+opponent White = Black
+
 type Board a = IntMap a
 
 type Coord = (Int, Int)
@@ -101,7 +105,7 @@ canPut GameStatus{_board=b, _turn=t, _ko=ko} pt =
                            _chainOpponents newChain
 
 putStone :: GameStatus -> Coord -> GameStatus
-putStone (GameStatus b t _) pt = next t
+putStone (GameStatus b t _) pt = GameStatus newBoard (opponent t) ko
     where
       newBoard' = boardPut t b pt
       newBoard = S.foldl' boardRemove newBoard' captured
@@ -114,9 +118,6 @@ putStone (GameStatus b t _) pt = next t
               not (isAlive chain)
            then Just $ S.toList captured !! 0
            else Nothing
-      next Black = GameStatus newBoard White ko
-      next White = GameStatus newBoard Black ko
 
 pass :: GameStatus -> GameStatus
-pass st@GameStatus{_turn=Black} = st{_turn=White}
-pass st@GameStatus{_turn=White} = st{_turn=Black}
+pass st@GameStatus{_turn=t} = st{_turn=opponent t}
