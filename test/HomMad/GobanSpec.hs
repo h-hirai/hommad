@@ -44,7 +44,7 @@ spec = do
       _chainOpponents chain2 `shouldBe` S.fromList [(6,1),(6,3)]
 
   describe "canPut" $ do
-    let testStatusB = GameStatus testBoard White Nothing
+    let testStatusB = GameStatus testBoard White Nothing emptyBoard IM.empty
     it "returns False for on a stone" $ do
       canPut testStatusB (5,1) `shouldBe` False
     it "returns False for out of a board" $ do

@@ -28,10 +28,14 @@ type Board a = IntMap a
 
 type Coord = (Int, Int)
 
+type ChainId = Int
+
 data GameStatus = GameStatus {
       _board :: Board Color    -- ^Board status
     , _turn :: Color           -- ^Turn
     , _ko :: Maybe Coord       -- ^Ko
+    , _chainMap :: Board ChainId
+    , _chains :: IntMap Chain
     } deriving (Show, Eq)
 
 data Chain = Chain {
@@ -44,7 +48,7 @@ emptyBoard :: Board a
 emptyBoard = IM.empty
 
 initGame :: GameStatus
-initGame = GameStatus emptyBoard Black Nothing
+initGame = GameStatus emptyBoard Black Nothing emptyBoard IM.empty
 
 -- |
 -- >>> boardRef emptyBoard (1,-1)
@@ -105,7 +109,7 @@ canPut GameStatus{_board=b, _turn=t, _ko=ko} pt =
                            _chainOpponents newChain
 
 putStone :: GameStatus -> Coord -> GameStatus
-putStone (GameStatus b t _) pt = GameStatus newBoard (opponent t) ko
+putStone (GameStatus b t _ cm cs) pt = GameStatus newBoard (opponent t) ko cm cs
     where
       newBoard' = boardPut t b pt
       newBoard = S.foldl' boardRemove newBoard' captured
