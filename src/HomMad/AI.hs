@@ -48,36 +48,37 @@ playout seed = playout' False $ randomSeq seed
       playout' _ [] _ = error "playout"
 
 pointsCanPut :: GameStatus -> [Coord]
-pointsCanPut st@GameStatus{_board=b, _turn=c} =
+pointsCanPut st@GameStatus{_turn=c} =
     filter (\p -> canPut st p &&
-                  not (isSimpleEye b c p) &&
-                  not (isCombinedEye b c p)) allCoords
+                  not (isSimpleEye st c p) &&
+                  not (isCombinedEye st c p)) allCoords
 
 isSingleSpace :: Board Color -> Color -> Coord -> Bool
 isSingleSpace b c p =
     boardRef b p == Empty &&
     all ((\n -> n == Point c || n == OutOfBoard) . boardRef b) (aroundOf p)
 
-chainsSurrounding :: Board Color -> Color -> Coord -> Set Chain
-chainsSurrounding b c p =
+chainsSurrounding :: GameStatus -> Color -> Coord -> Set Chain
+chainsSurrounding st@GameStatus{_board=b} c p =
     S.fromList $
-    map (getChain b) $ filter ((== Point c) . boardRef b) $ aroundOf p
+    map (getChain st) $ filter ((== Point c) . boardRef b) $ aroundOf p
 
-isSimpleEye :: Board Color -> Color -> Coord -> Bool
-isSimpleEye b c p =
+isSimpleEye :: GameStatus -> Color -> Coord -> Bool
+isSimpleEye st@GameStatus{_board=b} c p =
     isSingleSpace b c p &&
     let (p1:rest) = filter ((==Point c).(boardRef b)) $ aroundOf p
-        ch = _chainCoords $ getChain b p1 in
+        ch = _chainCoords $ getChain st p1 in
     all (`S.member` ch) rest
 
-isCombinedEye :: Board Color -> Color -> Coord -> Bool
-isCombinedEye b c p = isSingleSpace b c p &&
-                      S.size chains == 2 &&
-                      F.any isOtherEye (_chainLiberties $ S.findMax chains)
-    where chains = chainsSurrounding b c p
+isCombinedEye :: GameStatus -> Color -> Coord -> Bool
+isCombinedEye st@GameStatus{_board=b} c p =
+    isSingleSpace b c p &&
+    S.size chains == 2 &&
+    F.any isOtherEye (liberties b $ S.findMax chains)
+    where chains = chainsSurrounding st c p
           isOtherEye pt = pt /= p &&
                           isSingleSpace b c pt &&
-                          chainsSurrounding b c pt == chains
+                          chainsSurrounding st c pt == chains
 
 count :: Board Color -> (Int, Int)
 count b = (count' Black, count' White)

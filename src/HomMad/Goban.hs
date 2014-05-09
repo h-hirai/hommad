@@ -1,10 +1,10 @@
 module HomMad.Goban where
 
+import Data.Monoid
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Set (Set)
 import qualified Data.Set as S
-import Data.List (foldl')
 import qualified Data.Foldable as F
 
 boardSize :: Int
@@ -28,6 +28,9 @@ type Board a = IntMap a
 
 type Coord = (Int, Int)
 
+toIdx :: Coord -> Int
+toIdx (row, col) = row*boardSize + col
+
 type ChainId = Int
 
 data GameStatus = GameStatus {
@@ -39,10 +42,25 @@ data GameStatus = GameStatus {
     } deriving (Show, Eq)
 
 data Chain = Chain {
-      _chainCoords :: Set Coord -- ^Coords of the chain stones
-    , _chainLiberties :: Set Coord -- ^Coords of the chain liberties
-    , _chainOpponents :: Set Coord -- ^Coords of the contacting opponents
-    } deriving (Show, Eq, Ord)
+      _chainId :: ChainId
+    , _chainSize :: Int
+    , _chainCoords :: Set Coord -- ^Coords of the chain stones
+    } deriving (Show, Ord)
+
+instance Eq Chain where
+    c1 == c2 = _chainId c1 == _chainId c2
+
+instance Monoid Chain where
+    mempty = Chain (-1) 0 S.empty
+    mappend c1 c2
+        | c1 == c2 = c1
+        | c1 == mempty = c2
+        | c2 == mempty = c1
+        | otherwise = Chain newId newSize coods
+      where
+        coods = _chainCoords c1 `S.union` _chainCoords c2
+        newSize = _chainSize c1 + _chainSize c2
+        newId = toIdx $ S.findMax coods
 
 emptyBoard :: Board a
 emptyBoard = IM.empty
@@ -57,18 +75,18 @@ initGame = GameStatus emptyBoard Black Nothing emptyBoard IM.empty
 -- O
 
 boardRef :: Board a -> Coord -> Point a
-boardRef b (row, col)
+boardRef b pt@(row, col)
     | row < 0 = OutOfBoard
     | row >= boardSize = OutOfBoard
     | col < 0 = OutOfBoard
     | col >= boardSize = OutOfBoard
-    | otherwise = maybe Empty Point $ IM.lookup (row*boardSize + col) b
+    | otherwise = maybe Empty Point $ IM.lookup (toIdx pt) b
 
 boardPut :: a -> Board a -> Coord -> Board a
-boardPut a b (row, col) = IM.insert (row*boardSize + col) a b
+boardPut a b pt = IM.insert (toIdx pt) a b
 
 boardRemove :: Board a -> Coord -> Board a
-boardRemove b (row, col) = IM.delete (row*boardSize + col) b
+boardRemove b pt = IM.delete (toIdx pt) b
 
 -- |
 -- >>> aroundOf (0,0)
@@ -77,49 +95,54 @@ boardRemove b (row, col) = IM.delete (row*boardSize + col) b
 aroundOf :: Coord -> [Coord]
 aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
 
-getChain :: Board Color -> Coord -> Chain
-getChain b pt = case color of
-                 Empty -> Chain S.empty S.empty S.empty
-                 OutOfBoard -> Chain S.empty S.empty S.empty
-                 _ -> getCoords (Chain S.empty S.empty S.empty) pt
-    where
-      color = boardRef b pt
-      getCoords ch@(Chain ps ls os) p =
-          case boardRef b p of
-            Empty -> ch{_chainLiberties=S.insert p ls}
-            OutOfBoard -> ch
-            c | c == color && not (p `S.member` ps) ->
-                  foldl' getCoords ch{_chainCoords=S.insert p ps} (aroundOf p)
-              | c /= color -> ch{_chainOpponents=S.insert p os}
-              | otherwise -> ch
+getChain :: GameStatus -> Coord -> Chain
+getChain st pt = maybe mempty id $
+                 case boardRef (_chainMap st) pt of
+                   (Point chId) -> IM.lookup chId $ _chains st
+                   _ -> Nothing
 
-isAlive :: Chain -> Bool
-isAlive Chain{_chainLiberties=ls} = not (S.null ls)
+liberties :: Board Color -> Chain -> Set Coord
+liberties b ch =
+    F.foldMap (S.fromList . filterNeighbor b Empty) $ _chainCoords ch
+
+filterNeighbor :: Eq a => Board a -> Point a -> Coord -> [Coord]
+filterNeighbor b p coord = filter ((==p).boardRef b) $ aroundOf coord
+
+isLastLiberty :: Board Color -> Coord -> Chain -> Bool
+isLastLiberty b pt = (==S.singleton pt) . liberties b
 
 canPut :: GameStatus -> Coord -> Bool
-canPut GameStatus{_board=b, _turn=t, _ko=ko} pt =
+canPut st@GameStatus{_board=b, _turn=t, _ko=ko} pt =
     isEmpty && isNotKo ko && (hasLiberty || canKillOpponet)
-    where isEmpty = boardRef b pt == Empty
-          isNotKo (Just koPt) = koPt /= pt
-          isNotKo Nothing     = True
-          newBoard = boardPut t b pt
-          newChain = getChain newBoard pt
-          hasLiberty = isAlive newChain
-          canKillOpponet = F.any (not . isAlive . getChain newBoard) $
-                           _chainOpponents newChain
+    where
+      isEmpty = boardRef b pt == Empty
+      isNotKo (Just koPt) = koPt /= pt
+      isNotKo Nothing     = True
+      neighborEmpty = filterNeighbor b Empty pt
+      neighborSame = filterNeighbor b (Point t) pt
+      neighborOpponent = filterNeighbor b (Point $ opponent t) pt
+      hasLiberty = not (null neighborEmpty) ||
+                   any (not.isLastLiberty b pt) (map (getChain st) neighborSame)
+      canKillOpponet =
+          any (isLastLiberty b pt) $ map (getChain st) neighborOpponent
 
 putStone :: GameStatus -> Coord -> GameStatus
-putStone (GameStatus b t _ cm cs) pt = GameStatus newBoard (opponent t) ko cm cs
+putStone st@(GameStatus b t _ cm cs) pt =
+    GameStatus newBoard (opponent t) ko cm cs
     where
+      neighborSame = filterNeighbor b (Point t) pt
+      neighborOpponent = filterNeighbor b (Point $ opponent t) pt
+      chainSingleton = Chain (toIdx pt) 1 (S.singleton pt)
+      chainConnected =
+          mconcat $ chainSingleton : map (getChain st) neighborSame
+      chainCaptured =
+          filter (isLastLiberty b pt) $ map (getChain st) neighborOpponent
+      captured = F.foldMap _chainCoords chainCaptured
       newBoard' = boardPut t b pt
       newBoard = S.foldl' boardRemove newBoard' captured
-      chain = getChain newBoard' pt
-      captured = F.foldMap (\p -> let ch = getChain newBoard' p in
-                             if isAlive ch then S.empty else _chainCoords ch)
-                 (_chainOpponents chain)
       ko = if S.size captured == 1 &&
-              S.size (_chainCoords chain) == 1 &&
-              not (isAlive chain)
+              _chainSize chainConnected == 1 &&
+              (S.null $ liberties b chainConnected)
            then Just $ S.toList captured !! 0
            else Nothing
 
