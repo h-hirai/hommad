@@ -67,27 +67,13 @@ spec = do
     it "is combined eye" $ do
       isCombinedEye testStatusA Black (8,0) `shouldBe` True
 
-  -- let testBoardB = makeBoard [W,W,W,W,W,E,B,W,W
-  --                            ,W,E,W,W,E,W,W,B,W
-  --                            ,W,W,W,E,W,W,B,B,W
-  --                            ,B,B,B,W,W,B,B,W,W
-  --                            ,B,B,B,B,B,B,B,W,W
-  --                            ,B,B,B,B,B,W,W,W,E
-  --                            ,B,B,B,B,W,W,W,E,W
-  --                            ,B,E,B,B,W,W,W,W,E
-  --                            ,E,B,E,B,W,E,W,W,W]
+  let testStatusB = playout 0 initGame
 
-  -- describe "isSimpleEye" $ do
-  --   it "is not SimpleEye" $ do
-  --     isSimpleEye testBoardB White (0,5) `shouldBe` False
-  --   it "is not CombinedEye" $ do
-  --     isCombinedEye testBoardB White (0,5) `shouldBe` False
-
-  -- describe "pointsCanPut" $ do
-  --   it "is finish" $ do
-  --     pointsCanPut initGame{_board=testBoardB, _turn=Black} `shouldBe` []
-  --   it "is last 1" $ do
-  --     pointsCanPut initGame{_board=testBoardB, _turn=White} `shouldBe` [(0,5)]
+  describe "playout finishes a game" $ do
+    it "has no points can put (1)" $ do
+      pointsCanPut testStatusB `shouldBe` []
+    it "has no points can put (2)" $ do
+      pointsCanPut (pass testStatusB) `shouldBe` []
 
   -- let testBoardC =
   --         _board $ putStone initGame{_board=testBoardB, _turn=White} (0,5)
