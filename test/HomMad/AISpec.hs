@@ -75,9 +75,6 @@ spec = do
     it "has no points can put (2)" $ do
       pointsCanPut (pass testStatusB) `shouldBe` []
 
-  -- let testBoardC =
-  --         _board $ putStone initGame{_board=testBoardB, _turn=White} (0,5)
-
-  -- describe "count" $ do
-  --   it "is (32,49)" $ do
-  --     count testBoardC `shouldBe` (4+4+4+5+7+5+2+1+0, 5+5+5+4+2+4+7+8+9)
+  describe "count" $ do
+    it "is (64,17)" $ do
+      count testStatusB `shouldBe` (9+9+9+9+6+6+5+6+5, 0+0+0+0+3+3+4+3+4)
