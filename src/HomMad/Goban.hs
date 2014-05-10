@@ -6,6 +6,7 @@ import qualified Data.IntMap as IM
 import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.Foldable as F
+import Data.List (foldl')
 
 boardSize :: Int
 boardSize = 9
@@ -126,9 +127,13 @@ canPut st@GameStatus{_board=b, _turn=t, _ko=ko} pt =
       canKillOpponet =
           any (isLastLiberty b pt) $ map (getChain st) neighborOpponent
 
+updateChainMap :: Chain -> Set Coord -> Board ChainId -> Board ChainId
+updateChainMap Chain{_chainId=chId, _chainCoords=addend} omitted chMap =
+    S.foldl' boardRemove (S.foldl' (boardPut chId) chMap addend) omitted
+
 putStone :: GameStatus -> Coord -> GameStatus
 putStone st@(GameStatus b t _ cm cs) pt =
-    GameStatus newBoard (opponent t) ko cm cs
+    GameStatus newBoard (opponent t) ko newChainMap newChains
     where
       neighborSame = filterNeighbor b (Point t) pt
       neighborOpponent = filterNeighbor b (Point $ opponent t) pt
@@ -145,6 +150,10 @@ putStone st@(GameStatus b t _ cm cs) pt =
               (S.null $ liberties b chainConnected)
            then Just $ S.toList captured !! 0
            else Nothing
+      newChainMap = updateChainMap chainConnected captured cm
+      newChains = foldl' (flip IM.delete)
+                  (IM.insert (_chainId chainConnected) chainConnected cs) $
+                  map _chainId chainCaptured
 
 pass :: GameStatus -> GameStatus
 pass st@GameStatus{_turn=t} = st{_turn=opponent t}
