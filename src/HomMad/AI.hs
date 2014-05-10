@@ -29,12 +29,12 @@ winningRateOfACoord seed n st pt =
           win Black (b, w) = b > w + komi
           win White (b, w) = b <= w + komi
 
-playoutsOfACoord :: Int -> Int -> GameStatus -> Coord -> [Board Color]
+playoutsOfACoord :: Int -> Int -> GameStatus -> Coord -> [GameStatus]
 playoutsOfACoord seed n st pt = map (flip playout st') seeds
     where seeds = take n $ randomSeq seed
           st' = putStone st pt
 
-playout :: Int -> GameStatus -> Board Color
+playout :: Int -> GameStatus -> GameStatus
 playout seed = playout' False $ randomSeq seed
     where
       playout' passed (r:rs) st =
@@ -42,7 +42,7 @@ playout seed = playout' False $ randomSeq seed
               cand = candidates !! (r `mod` length candidates) in
           if null candidates
           then if passed
-               then _board st
+               then st
                else playout' True (r:rs) (pass st)
           else playout' False rs $ putStone st cand
       playout' _ [] _ = error "playout"
@@ -80,8 +80,8 @@ isCombinedEye st@GameStatus{_board=b} c p =
                           isSingleSpace b c pt &&
                           chainsSurrounding st c pt == chains
 
-count :: Board Color -> (Int, Int)
-count b = (count' Black, count' White)
+count :: GameStatus -> (Int, Int)
+count GameStatus{_board=b} = (count' Black, count' White)
     where count' c = length $ filter (areaOf c) allCoords
           areaOf c pt = stone c pt || eye c pt
           stone c pt = boardRef b pt == Point c
