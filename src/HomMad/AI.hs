@@ -15,8 +15,8 @@ komi = 7
 randomSeq :: Int -> [Int]
 randomSeq seed = randomRs (0, maxBound) (mkStdGen seed)
 
-move :: Int -> GameStatus -> GameStatus
-move seed st = putStone st result
+move :: Int -> GameStatus -> Coord
+move seed st = result
     where candidates = filter (canPut st) allCoords
           candsAndSeeds = zip candidates $ randomSeq seed
           getRate (cand, s) = winningRateOfACoord s 100 st cand
