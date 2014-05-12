@@ -46,10 +46,7 @@ data Chain = Chain {
       _chainId :: ChainId
     , _chainSize :: Int
     , _chainCoords :: Set Coord -- ^Coords of the chain stones
-    } deriving (Show, Ord)
-
-instance Eq Chain where
-    c1 == c2 = _chainId c1 == _chainId c2
+    } deriving (Show, Eq, Ord)
 
 instance Monoid Chain where
     mempty = Chain (-1) 0 S.empty
