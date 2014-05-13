@@ -140,8 +140,7 @@ putStone st@(GameStatus b t _ cm cs) pt =
       chainCaptured =
           filter (isLastLiberty b pt) $ map (getChain st) neighborOpponent
       captured = F.foldMap _chainCoords chainCaptured
-      newBoard' = boardPut t b pt
-      newBoard = S.foldl' boardRemove newBoard' captured
+      newBoard = S.foldl' boardRemove (boardPut t b pt) captured
       ko = if S.size captured == 1 &&
               _chainSize chainConnected == 1 &&
               (S.null $ liberties b chainConnected)
