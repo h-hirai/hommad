@@ -6,7 +6,6 @@ import qualified Data.IntMap as IM
 import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.Foldable as F
-import Data.List (foldl')
 
 boardSize :: Int
 boardSize = 9
@@ -32,39 +31,34 @@ type Coord = (Int, Int)
 toIdx :: Coord -> Int
 toIdx (row, col) = row*boardSize + col
 
-type ChainId = Int
-
 data GameStatus = GameStatus {
       _board :: Board Color    -- ^Board status
     , _turn :: Color           -- ^Turn
     , _ko :: Maybe Coord       -- ^Ko
-    , _chainMap :: Board ChainId
-    , _chains :: IntMap Chain
+    , _chains :: Board Chain
     } deriving (Show, Eq)
 
 data Chain = Chain {
-      _chainId :: ChainId
-    , _chainSize :: Int
+      _chainSize :: Int
     , _chainCoords :: Set Coord -- ^Coords of the chain stones
     } deriving (Show, Eq, Ord)
 
 instance Monoid Chain where
-    mempty = Chain (-1) 0 S.empty
+    mempty = Chain 0 S.empty
     mappend c1 c2
         | c1 == c2 = c1
         | c1 == mempty = c2
         | c2 == mempty = c1
-        | otherwise = Chain newId newSize coods
+        | otherwise = Chain newSize coods
       where
         coods = _chainCoords c1 `S.union` _chainCoords c2
         newSize = _chainSize c1 + _chainSize c2
-        newId = toIdx $ S.findMax coods
 
 emptyBoard :: Board a
 emptyBoard = IM.empty
 
 initGame :: GameStatus
-initGame = GameStatus emptyBoard Black Nothing emptyBoard IM.empty
+initGame = GameStatus emptyBoard Black Nothing emptyBoard
 
 -- |
 -- >>> boardRef emptyBoard (1,-1)
@@ -95,8 +89,8 @@ aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
 
 getChain :: GameStatus -> Coord -> Chain
 getChain st pt = maybe mempty id $
-                 case boardRef (_chainMap st) pt of
-                   (Point chId) -> IM.lookup chId $ _chains st
+                 case boardRef (_chains st) pt of
+                   (Point ch) -> Just ch
                    _ -> Nothing
 
 liberties :: Board Color -> Chain -> Set Coord
@@ -124,17 +118,17 @@ canPut st@GameStatus{_board=b, _turn=t, _ko=ko} pt =
       canKillOpponet =
           any (isLastLiberty b pt) $ map (getChain st) neighborOpponent
 
-updateChainMap :: Chain -> Set Coord -> Board ChainId -> Board ChainId
-updateChainMap Chain{_chainId=chId, _chainCoords=addend} omitted chMap =
-    S.foldl' boardRemove (S.foldl' (boardPut chId) chMap addend) omitted
+updateChainMap :: Chain -> Set Coord -> Board Chain -> Board Chain
+updateChainMap ch@Chain{_chainCoords=addend} omitted chMap =
+    S.foldl' boardRemove (S.foldl' (boardPut ch) chMap addend) omitted
 
 putStone :: GameStatus -> Coord -> GameStatus
-putStone st@(GameStatus b t _ cm cs) pt =
-    GameStatus newBoard (opponent t) ko newChainMap newChains
+putStone st@(GameStatus b t _ cs) pt =
+    GameStatus newBoard (opponent t) ko newChainMap
     where
       neighborSame = filterNeighbor b (Point t) pt
       neighborOpponent = filterNeighbor b (Point $ opponent t) pt
-      chainSingleton = Chain (toIdx pt) 1 (S.singleton pt)
+      chainSingleton = Chain 1 (S.singleton pt)
       chainConnected =
           mconcat $ chainSingleton : map (getChain st) neighborSame
       chainCaptured =
@@ -146,10 +140,7 @@ putStone st@(GameStatus b t _ cm cs) pt =
               (S.null $ liberties b chainConnected)
            then Just $ S.toList captured !! 0
            else Nothing
-      newChainMap = updateChainMap chainConnected captured cm
-      newChains = foldl' (flip IM.delete)
-                  (IM.insert (_chainId chainConnected) chainConnected cs) $
-                  map _chainId chainCaptured
+      newChainMap = updateChainMap chainConnected captured cs
 
 pass :: GameStatus -> GameStatus
 pass st@GameStatus{_turn=t} = st{_turn=opponent t}
