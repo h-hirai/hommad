@@ -76,7 +76,7 @@ isCombinedEye :: GameStatus -> Color -> Coord -> Bool
 isCombinedEye st@GameStatus{_board=b} c p =
     isSingleSpace b c p &&
     S.size chains == 2 &&
-    F.any isOtherEye (liberties b $ S.findMax chains)
+    F.any isOtherEye (_chainLiberties $ S.findMax chains)
     where chains = chainsSurrounding st c p
           isOtherEye pt = pt /= p &&
                           isSingleSpace b c pt &&

@@ -34,6 +34,8 @@ spec = do
                     ,(6, 3) -- W
                     ]
 
+  let testStatusD = foldl putStone testStatusA [(7,8), (7,2)]
+
   let testStatusB = foldl putStone initGame [
                      (3,4) -- B
                     ,(2,4) -- W
@@ -55,17 +57,20 @@ spec = do
     it "has alone stone" $ do
       _chainCoords chain1  `shouldBe` S.fromList [(6,2)]
     it "has a liberty" $ do
-      liberties (_board testStatusA) chain1 `shouldBe` S.fromList [(7,2)]
+      _chainLiberties chain1 `shouldBe` S.fromList [(7,2)]
     let chain2 = getChain testStatusA (7,3)
     it "has many stones" $ do
       _chainCoords chain2
            `shouldBe` S.fromList [(7,1),(7,3),(8,1),(8,2),(8,3)]
     it "has liberties" $ do
-      liberties (_board testStatusA) chain2
+      _chainLiberties chain2
            `shouldBe` S.fromList [(7,0),(7,2),(7,4),(8,0),(8,4)]
     it "is connected" $ do
       _chainCoords (getChain testStatusB (4,4))
            `shouldBe` S.fromList [(3,4), (4,3), (5,3), (5,4), (4,5), (4,4)]
+    it "has liberty by killing" $ do
+      getChain testStatusD (7,2)
+           `shouldBe` Chain 1 (S.fromList [(7,2)]) (S.fromList [(6,2)])
 
   describe "canPut" $ do
     let testStatusC = pass testStatusA

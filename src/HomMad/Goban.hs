@@ -3,9 +3,10 @@ module HomMad.Goban where
 import Data.Monoid
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
-import Data.Set (Set)
+import Data.Set (Set, (\\))
 import qualified Data.Set as S
 import qualified Data.Foldable as F
+import Data.List (foldl', partition)
 
 boardSize :: Int
 boardSize = 9
@@ -41,18 +42,20 @@ data GameStatus = GameStatus {
 data Chain = Chain {
       _chainSize :: Int
     , _chainCoords :: Set Coord -- ^Coords of the chain stones
+    , _chainLiberties :: Set Coord -- ^Coords of the chain liberties
     } deriving (Show, Eq, Ord)
 
 instance Monoid Chain where
-    mempty = Chain 0 S.empty
+    mempty = Chain 0 S.empty S.empty
     mappend c1 c2
         | c1 == c2 = c1
         | c1 == mempty = c2
         | c2 == mempty = c1
-        | otherwise = Chain newSize coods
+        | otherwise = Chain newSize coords liberties
       where
-        coods = _chainCoords c1 `S.union` _chainCoords c2
+        coords = _chainCoords c1 `S.union` _chainCoords c2
         newSize = _chainSize c1 + _chainSize c2
+        liberties = _chainLiberties c1 `S.union` _chainLiberties c2 \\ coords
 
 emptyBoard :: Board a
 emptyBoard = IM.empty
@@ -93,15 +96,11 @@ getChain st pt = maybe mempty id $
                    (Point ch) -> Just ch
                    _ -> Nothing
 
-liberties :: Board Color -> Chain -> Set Coord
-liberties b ch =
-    F.foldMap (S.fromList . filterNeighbor b Empty) $ _chainCoords ch
-
 filterNeighbor :: Eq a => Board a -> Point a -> Coord -> [Coord]
 filterNeighbor b p coord = filter ((==p).boardRef b) $ aroundOf coord
 
-isLastLiberty :: Board Color -> Coord -> Chain -> Bool
-isLastLiberty b pt = (==S.singleton pt) . liberties b
+isLastLiberty :: Coord -> Chain -> Bool
+isLastLiberty pt = (==S.singleton pt) . _chainLiberties
 
 canPut :: GameStatus -> Coord -> Bool
 canPut st@GameStatus{_board=b, _turn=t, _ko=ko} pt =
@@ -114,13 +113,42 @@ canPut st@GameStatus{_board=b, _turn=t, _ko=ko} pt =
       neighborSame = filterNeighbor b (Point t) pt
       neighborOpponent = filterNeighbor b (Point $ opponent t) pt
       hasLiberty = not (null neighborEmpty) ||
-                   any (not.isLastLiberty b pt) (map (getChain st) neighborSame)
+                   any (not.isLastLiberty pt) (map (getChain st) neighborSame)
       canKillOpponet =
-          any (isLastLiberty b pt) $ map (getChain st) neighborOpponent
+          any (isLastLiberty pt) $ map (getChain st) neighborOpponent
 
-updateChainMap :: Chain -> Set Coord -> Board Chain -> Board Chain
-updateChainMap ch@Chain{_chainCoords=addend} omitted chMap =
-    S.foldl' boardRemove (S.foldl' (boardPut ch) chMap addend) omitted
+updateChain :: (Chain -> Chain) -> Coord -> Board Chain -> Board Chain
+updateChain f pt chMap =
+    case boardRef chMap pt of
+      Point ch -> let ch' = f ch in
+                  S.foldl' (boardPut ch') chMap $ _chainCoords ch'
+      _ -> chMap
+
+removeChainFromMap :: Set Coord -> Board Chain -> Board Chain
+removeChainFromMap removed chMap = S.foldl' addLiberty removedMap removed
+    where
+      removedMap = S.foldl' boardRemove chMap removed
+      addLiberty :: Board Chain -> Coord -> Board Chain
+      addLiberty cm pt = foldl' (addLiberty' pt) cm $ aroundOf pt
+      addLiberty' :: Coord -> Board Chain ->  Coord -> Board Chain
+      addLiberty' l cm pt =
+          updateChain (\ch@Chain{_chainLiberties=ls} ->
+                       ch{_chainLiberties=S.insert l ls}) pt cm
+
+removeLiberty :: Coord -> [Chain] -> Board Chain -> Board Chain
+removeLiberty pt cs chMap = foldl' update chMap cs
+    where
+      update :: Board Chain -> Chain -> Board Chain
+      update cm ch@Chain{_chainLiberties=ls} =
+          let ch' = ch{_chainLiberties=S.delete pt ls} in
+          S.foldl' (boardPut ch') cm $ _chainCoords ch
+
+updateChainMap :: Coord -> [Chain] ->Chain -> Set Coord ->
+                  Board Chain -> Board Chain
+updateChainMap pt cs ch@Chain{_chainCoords=addend} omitted chMap =
+    removeChainFromMap omitted $
+    removeLiberty pt cs $
+    S.foldl' (boardPut ch) chMap addend
 
 putStone :: GameStatus -> Coord -> GameStatus
 putStone st@(GameStatus b t _ cs) pt =
@@ -128,19 +156,20 @@ putStone st@(GameStatus b t _ cs) pt =
     where
       neighborSame = filterNeighbor b (Point t) pt
       neighborOpponent = filterNeighbor b (Point $ opponent t) pt
-      chainSingleton = Chain 1 (S.singleton pt)
+      neighborEmpty = filterNeighbor b Empty pt
+      chainSingleton = Chain 1 (S.singleton pt) (S.fromList neighborEmpty)
       chainConnected =
           mconcat $ chainSingleton : map (getChain st) neighborSame
-      chainCaptured =
-          filter (isLastLiberty b pt) $ map (getChain st) neighborOpponent
+      (chainCaptured, chainOpponent) =
+          partition (isLastLiberty pt) $ map (getChain st) neighborOpponent
       captured = F.foldMap _chainCoords chainCaptured
       newBoard = S.foldl' boardRemove (boardPut t b pt) captured
       ko = if S.size captured == 1 &&
               _chainSize chainConnected == 1 &&
-              (S.null $ liberties b chainConnected)
+              (S.null $ _chainLiberties chainConnected)
            then Just $ S.toList captured !! 0
            else Nothing
-      newChainMap = updateChainMap chainConnected captured cs
+      newChainMap = updateChainMap pt chainOpponent chainConnected captured cs
 
 pass :: GameStatus -> GameStatus
 pass st@GameStatus{_turn=t} = st{_turn=opponent t}
