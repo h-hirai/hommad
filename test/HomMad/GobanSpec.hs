@@ -84,3 +84,7 @@ spec = do
       canPut testStatusC (0,0) `shouldBe` True
     it "returns True if can capture" $ do
       canPut testStatusC (7,2) `shouldBe` True
+    it "returns Flase for the ko point" $ do
+      canPut testStatusD (6,2) `shouldBe` False
+    it "returns True for the ko point when passed once" $ do
+      canPut (pass $ pass testStatusD) (6,2) `shouldBe` True

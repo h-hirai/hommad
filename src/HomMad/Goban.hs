@@ -172,4 +172,4 @@ putStone st@(GameStatus b t _ cs) pt =
       newChainMap = updateChainMap pt chainOpponent chainConnected captured cs
 
 pass :: GameStatus -> GameStatus
-pass st@GameStatus{_turn=t} = st{_turn=opponent t}
+pass st@GameStatus{_turn=t} = st{_turn=opponent t, _ko=Nothing}
