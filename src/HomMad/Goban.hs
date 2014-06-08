@@ -1,8 +1,8 @@
 module HomMad.Goban where
 
 import Data.Monoid
-import Data.IntMap (IntMap)
-import qualified Data.IntMap as IM
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap.Strict as IM
 import Data.Set (Set, (\\))
 import qualified Data.Set as S
 import qualified Data.Foldable as F
@@ -27,10 +27,11 @@ opponent White = Black
 
 type Board a = IntMap a
 
-type Coord = (Int, Int)
+data Coord = Coord {-# UNPACK #-} !Int {-# UNPACK #-} !Int
+             deriving (Show, Eq, Ord)
 
 toIdx :: Coord -> Int
-toIdx (row, col) = row*boardSize + col
+toIdx (Coord row col) = row*boardSize + col
 
 data GameStatus = GameStatus {
       _board :: Board Color    -- ^Board status
@@ -70,7 +71,7 @@ initGame = GameStatus emptyBoard Black Nothing emptyBoard
 -- O
 
 boardRef :: Board a -> Coord -> Point a
-boardRef b pt@(row, col)
+boardRef b pt@(Coord row col)
     | row < 0 = OutOfBoard
     | row >= boardSize = OutOfBoard
     | col < 0 = OutOfBoard
@@ -88,7 +89,10 @@ boardRemove b pt = IM.delete (toIdx pt) b
 -- [(-1,0),(1,0),(0,-1),(0,1)]
 
 aroundOf :: Coord -> [Coord]
-aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
+aroundOf (Coord row col) = [Coord (row-1) col
+                           ,Coord (row+1) col
+                           ,Coord row (col-1)
+                           ,Coord row (col+1)]
 
 getChain :: GameStatus -> Coord -> Chain
 getChain st pt = maybe mempty id $

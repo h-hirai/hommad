@@ -6,7 +6,7 @@ import HomMad.AI
 
 spec :: Spec
 spec = do
-  let testStatusA = foldl putStone initGame [
+  let testStatusA = foldl putStone initGame $ map (uncurry Coord) [
                      (2, 2) -- B
                     ,(0, 2) -- W
                     ,(2, 3) -- B
@@ -42,19 +42,19 @@ spec = do
 
   describe "isEye" $ do
     it "is simple eye" $ do
-      isSimpleEye testStatusA Black (4,4) `shouldBe` True
+      isSimpleEye testStatusA Black (Coord 4 4) `shouldBe` True
     it "is not eye of white" $ do
-      isSimpleEye testStatusA White (4,4) `shouldBe` False
+      isSimpleEye testStatusA White (Coord 4 4) `shouldBe` False
     it "not empty point is not eye" $ do
-      isSimpleEye testStatusA White (7,8) `shouldBe` False
+      isSimpleEye testStatusA White (Coord 7 8) `shouldBe` False
     it "is not simple eye" $ do
-      isSimpleEye testStatusA Black (3,3) `shouldBe` False
+      isSimpleEye testStatusA Black (Coord 3 3) `shouldBe` False
     it "is not combined eye" $ do
-      isSimpleEye testStatusA Black (3,3) `shouldBe` False
+      isSimpleEye testStatusA Black (Coord 3 3) `shouldBe` False
     it "is not treated as combined eye " $ do
-      isCombinedEye testStatusA White (0,6) `shouldBe` False
+      isCombinedEye testStatusA White (Coord 0 6) `shouldBe` False
     it "is combined eye" $ do
-      isCombinedEye testStatusA Black (8,0) `shouldBe` True
+      isCombinedEye testStatusA Black (Coord 8 0) `shouldBe` True
 
   let testStatusB = playout 0 initGame
 
