@@ -1,8 +1,8 @@
 module HomMad.Goban where
 
 import Data.Monoid
-import Data.IntMap (IntMap)
-import qualified Data.IntMap as IM
+import Data.Vector (Vector, unsafeIndex)
+import qualified Data.Vector as V (replicate, update, singleton)
 import Data.Set (Set, (\\))
 import qualified Data.Set as S
 import qualified Data.Foldable as F
@@ -25,7 +25,7 @@ opponent :: Color -> Color
 opponent Black = White
 opponent White = Black
 
-type Board a = IntMap a
+type Board a = Vector (Point a)
 
 type Coord = (Int, Int)
 
@@ -58,7 +58,7 @@ instance Monoid Chain where
         liberties = _chainLiberties c1 `S.union` _chainLiberties c2 \\ coords
 
 emptyBoard :: Board a
-emptyBoard = IM.empty
+emptyBoard = V.replicate (boardSize * boardSize) Empty
 
 initGame :: GameStatus
 initGame = GameStatus emptyBoard Black Nothing emptyBoard
@@ -75,13 +75,13 @@ boardRef b pt@(row, col)
     | row >= boardSize = OutOfBoard
     | col < 0 = OutOfBoard
     | col >= boardSize = OutOfBoard
-    | otherwise = maybe Empty Point $ IM.lookup (toIdx pt) b
+    | otherwise = unsafeIndex b (toIdx pt)
 
 boardPut :: a -> Board a -> Coord -> Board a
-boardPut a b pt = IM.insert (toIdx pt) a b
+boardPut a b pt = V.update b (V.singleton (toIdx pt, Point a))
 
 boardRemove :: Board a -> Coord -> Board a
-boardRemove b pt = IM.delete (toIdx pt) b
+boardRemove b pt = V.update b (V.singleton (toIdx pt, Empty))
 
 -- |
 -- >>> aroundOf (0,0)
