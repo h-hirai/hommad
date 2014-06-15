@@ -3,17 +3,6 @@ module HomMad.GobanSpec where
 import Test.Hspec
 import HomMad.Goban
 import qualified Data.Set as S
-import qualified Data.IntMap as IM
-
-data PointSym = E | B | W
-
-makeBoard :: [PointSym] -> Board Color
-makeBoard syms = IM.fromList $ map g $ filter f $ zip [0..] syms
-    where f (_, E) = False
-          f _      = True
-          g (idx, B) = (idx, Black)
-          g (idx, W) = (idx, White)
-          g _ = error "makeBoard"
 
 spec :: Spec
 spec = do
