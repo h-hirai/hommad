@@ -2,7 +2,8 @@ module HomMad.Goban where
 
 import Data.Monoid
 import Data.Vector (Vector, unsafeIndex)
-import qualified Data.Vector as V (replicate, update, singleton)
+import qualified Data.Vector as V (replicate, cons, snoc, concat, update,
+                                   singleton, (++))
 import Data.Set (Set, (\\))
 import qualified Data.Set as S
 import qualified Data.Foldable as F
@@ -27,10 +28,13 @@ opponent White = Black
 
 type Board a = Vector (Point a)
 
-type Coord = (Int, Int)
+newtype Coord = Coord Int deriving (Eq, Ord)
 
-toIdx :: Coord -> Int
-toIdx (row, col) = row*boardSize + col
+instance Show Coord where
+    show (Coord pt) = show (pt `div` (boardSize+2), pt `mod` (boardSize+2))
+
+coord :: (Int, Int) -> Coord
+coord (row, col) = Coord $ row*(boardSize+2) + col
 
 data GameStatus = GameStatus {
       _board :: Board Color    -- ^Board status
@@ -58,7 +62,12 @@ instance Monoid Chain where
         liberties = _chainLiberties c1 `S.union` _chainLiberties c2 \\ coords
 
 emptyBoard :: Board a
-emptyBoard = V.replicate (boardSize * boardSize) Empty
+emptyBoard = V.replicate (boardSize + 2) OutOfBoard V.++
+             V.concat (replicate boardSize
+                       (OutOfBoard `V.cons`
+                        V.replicate boardSize Empty `V.snoc`
+                        OutOfBoard)) V.++
+             V.replicate (boardSize + 2) OutOfBoard
 
 initGame :: GameStatus
 initGame = GameStatus emptyBoard Black Nothing emptyBoard
@@ -70,34 +79,28 @@ initGame = GameStatus emptyBoard Black Nothing emptyBoard
 -- O
 
 boardRef :: Board a -> Coord -> Point a
-boardRef b pt@(row, col)
-    | row < 0 = OutOfBoard
-    | row >= boardSize = OutOfBoard
-    | col < 0 = OutOfBoard
-    | col >= boardSize = OutOfBoard
-    | otherwise = unsafeIndex b (toIdx pt)
+boardRef b (Coord pt) = unsafeIndex b pt
 
 boardPut :: a -> Board a -> Coord -> Board a
-boardPut a b pt = V.update b (V.singleton (toIdx pt, Point a))
+boardPut a b (Coord pt) = V.update b (V.singleton (pt, Point a))
 
 boardRemove :: Board a -> Coord -> Board a
-boardRemove b pt = V.update b (V.singleton (toIdx pt, Empty))
+boardRemove b (Coord pt) = V.update b (V.singleton (pt, Empty))
 
 -- |
 -- >>> aroundOf (0,0)
 -- [(-1,0),(1,0),(0,-1),(0,1)]
 
 aroundOf :: Coord -> [Coord]
-aroundOf (row, col) = [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]
+aroundOf (Coord pt) = map Coord [pt-(boardSize+2), pt+(boardSize+2), pt-1, pt+1]
 
 getChain :: GameStatus -> Coord -> Chain
-getChain st pt = maybe mempty id $
-                 case boardRef (_chains st) pt of
-                   (Point ch) -> Just ch
-                   _ -> Nothing
+getChain st pt = case boardRef (_chains st) pt of
+                   (Point ch) -> ch
+                   _ -> mempty
 
 filterNeighbor :: Eq a => Board a -> Point a -> Coord -> [Coord]
-filterNeighbor b p coord = filter ((==p).boardRef b) $ aroundOf coord
+filterNeighbor b p pt = filter ((==p).boardRef b) $ aroundOf pt
 
 isLastLiberty :: Coord -> Chain -> Bool
 isLastLiberty pt = (==S.singleton pt) . _chainLiberties

@@ -6,55 +6,55 @@ import HomMad.AI
 
 spec :: Spec
 spec = do
-  let testStatusA = foldl putStone initGame [
-                     (2, 2) -- B
-                    ,(0, 2) -- W
-                    ,(2, 3) -- B
-                    ,(0, 4) -- W
-                    ,(3, 2) -- B
-                    ,(0, 5) -- W
-                    ,(3, 3) -- B
-                    ,(0, 7) -- W
-                    ,(3, 4) -- B
-                    ,(1, 2) -- W
-                    ,(4, 3) -- B
+  let testStatusA = foldl putStone initGame $ map coord [
+                     (3, 3) -- B
                     ,(1, 3) -- W
-                    ,(4, 5) -- B
-                    ,(1, 4) -- W
-                    ,(5, 3) -- B
+                    ,(3, 4) -- B
+                    ,(1, 5) -- W
+                    ,(4, 3) -- B
                     ,(1, 6) -- W
-                    ,(5, 4) -- B
-                    ,(1, 7) -- W
-                    ,(5, 5) -- B
+                    ,(4, 4) -- B
                     ,(1, 8) -- W
-                    ,(6, 0) -- B
-                    ,(7, 8) -- W
-                    ,(6, 1) -- B
-                    ,(8, 7) -- W
-                    ,(6, 2) -- B
-                    ,(3, 8) -- W
-                    ,(7, 0) -- B
-                    ,(4, 8) -- W
+                    ,(4, 5) -- B
+                    ,(2, 3) -- W
+                    ,(5, 4) -- B
+                    ,(2, 4) -- W
+                    ,(5, 6) -- B
+                    ,(2, 5) -- W
+                    ,(6, 4) -- B
+                    ,(2, 7) -- W
+                    ,(6, 5) -- B
+                    ,(2, 8) -- W
+                    ,(6, 6) -- B
+                    ,(2, 9) -- W
+                    ,(7, 1) -- B
+                    ,(8, 9) -- W
                     ,(7, 2) -- B
-                    ,(5, 8) -- W
+                    ,(9, 8) -- W
+                    ,(7, 3) -- B
+                    ,(4, 9) -- W
                     ,(8, 1) -- B
+                    ,(5, 9) -- W
+                    ,(8, 3) -- B
+                    ,(6, 9) -- W
+                    ,(9, 2) -- B
                     ]
 
   describe "isEye" $ do
     it "is simple eye" $ do
-      isSimpleEye testStatusA Black (4,4) `shouldBe` True
+      isSimpleEye testStatusA Black (coord (5,5)) `shouldBe` True
     it "is not eye of white" $ do
-      isSimpleEye testStatusA White (4,4) `shouldBe` False
+      isSimpleEye testStatusA White (coord (5,5)) `shouldBe` False
     it "not empty point is not eye" $ do
-      isSimpleEye testStatusA White (7,8) `shouldBe` False
+      isSimpleEye testStatusA White (coord (8,9)) `shouldBe` False
     it "is not simple eye" $ do
-      isSimpleEye testStatusA Black (3,3) `shouldBe` False
+      isSimpleEye testStatusA Black (coord (4,4)) `shouldBe` False
     it "is not combined eye" $ do
-      isSimpleEye testStatusA Black (3,3) `shouldBe` False
+      isSimpleEye testStatusA Black (coord (4,4)) `shouldBe` False
     it "is not treated as combined eye " $ do
-      isCombinedEye testStatusA White (0,6) `shouldBe` False
+      isCombinedEye testStatusA White (coord (1,7)) `shouldBe` False
     it "is combined eye" $ do
-      isCombinedEye testStatusA Black (8,0) `shouldBe` True
+      isCombinedEye testStatusA Black (coord (9,1)) `shouldBe` True
 
   let testStatusB = playout 0 initGame
 

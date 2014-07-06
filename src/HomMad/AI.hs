@@ -91,4 +91,4 @@ count GameStatus{_board=b} = (count' Black, count' White)
                      Point c `elem` [boardRef b p | p <- aroundOf pt]
 
 allCoords :: [Coord]
-allCoords = [(row, col) | row <- [0..boardSize-1], col <- [0..boardSize-1]]
+allCoords = [coord (row, col) | row <- [1..boardSize], col <- [1..boardSize]]
