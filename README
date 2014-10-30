@@ -1,0 +1,23 @@
+PREPARING
+
+  $ cabal sandbox init
+  $ cabal install --enable-test --only-dependencies --reinstall
+
+
+RUNNING TESTS
+
+  $ cabal configure --enable-test
+  $ cabal test
+
+
+RUNNING BENCHMARKS
+
+  $ cabal configure --enable-benchmarks
+  $ cabal bench
+
+
+GETTING PROFILES
+
+  $ cabal configure --enable-library-profiling --enable-executable-profiling
+  $ cabal build
+  $ ./dist/build/bench-playout/bench-playout +RTS -p
