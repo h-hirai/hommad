@@ -1,7 +1,7 @@
 module HomMad.Goban where
 
 import Data.Monoid
-import Data.Vector (Vector, unsafeIndex)
+import Data.Vector (Vector, unsafeIndex, (//))
 import qualified Data.Vector as V (replicate, cons, snoc, concat, update,
                                    singleton, (++))
 import Data.Set (Set, (\\))
@@ -28,7 +28,7 @@ opponent White = Black
 
 type Board a = Vector (Point a)
 
-newtype Coord = Coord Int deriving (Eq, Ord)
+newtype Coord = Coord { toInt::Int } deriving (Eq, Ord)
 
 instance Show Coord where
     show (Coord pt) = show (pt `div` (boardSize+2), pt `mod` (boardSize+2))
@@ -84,6 +84,10 @@ boardRef b (Coord pt) = unsafeIndex b pt
 boardPut :: a -> Board a -> Coord -> Board a
 boardPut a b (Coord pt) = V.update b (V.singleton (pt, Point a))
 
+boardFillwithChain :: a -> Board a -> Chain -> Board a
+boardFillwithChain a b ch =
+ b // zip (map toInt $ S.toList $ _chainCoords ch) (repeat $ Point a)
+
 boardRemove :: Board a -> Coord -> Board a
 boardRemove b (Coord pt) = V.update b (V.singleton (pt, Empty))
 
@@ -123,8 +127,7 @@ canPut st@GameStatus{_board=b, _turn=t, _ko=ko} pt =
 updateChain :: (Chain -> Chain) -> Coord -> Board Chain -> Board Chain
 updateChain f pt chMap =
     case boardRef chMap pt of
-      Point ch -> let ch' = f ch in
-                  S.foldl' (boardPut ch') chMap $ _chainCoords ch'
+      Point ch -> let ch' = f ch in boardFillwithChain ch' chMap ch'
       _ -> chMap
 
 removeChainFromMap :: Set Coord -> Board Chain -> Board Chain
@@ -144,14 +147,13 @@ removeLiberty pt cs chMap = foldl' update chMap cs
       update :: Board Chain -> Chain -> Board Chain
       update cm ch@Chain{_chainLiberties=ls} =
           let ch' = ch{_chainLiberties=S.delete pt ls} in
-          S.foldl' (boardPut ch') cm $ _chainCoords ch
+          boardFillwithChain ch' cm ch
 
 updateChainMap :: Coord -> [Chain] ->Chain -> Set Coord ->
                   Board Chain -> Board Chain
-updateChainMap pt cs ch@Chain{_chainCoords=addend} omitted chMap =
+updateChainMap pt cs ch omitted chMap =
     removeChainFromMap omitted $
-    removeLiberty pt cs $
-    S.foldl' (boardPut ch) chMap addend
+    removeLiberty pt cs $ boardFillwithChain ch chMap ch
 
 putStone :: GameStatus -> Coord -> GameStatus
 putStone st@(GameStatus b t _ cs) pt =
