@@ -30,11 +30,17 @@ type Board a = Vector (Point a)
 
 newtype Coord = Coord { toInt::Int } deriving (Eq, Ord)
 
+row :: Coord -> Int
+row (Coord pt) = pt `div` (boardSize+2)
+
+col :: Coord -> Int
+col (Coord pt) = pt `mod` (boardSize+2)
+
 instance Show Coord where
-    show (Coord pt) = show (pt `div` (boardSize+2), pt `mod` (boardSize+2))
+    show pt = "coord " ++ show (row pt, col pt)
 
 coord :: (Int, Int) -> Coord
-coord (row, col) = Coord $ row*(boardSize+2) + col
+coord (r, c) = Coord $ r*(boardSize+2) + c
 
 data GameStatus = GameStatus {
       _board :: Board Color
@@ -92,8 +98,8 @@ boardRemove :: Board a -> Coord -> Board a
 boardRemove b (Coord pt) = V.update b (V.singleton (pt, Empty))
 
 -- |
--- >>> aroundOf (2,3)
--- [(1,3),(3,3),(2,2),(2,4)]
+-- >>> aroundOf $ coord (2,3)
+-- [coord (1,3),coord (3,3),coord (2,2),coord (2,4)]
 
 aroundOf :: Coord -> [Coord]
 aroundOf (Coord pt) = map Coord [pt-(boardSize+2), pt+(boardSize+2), pt-1, pt+1]
