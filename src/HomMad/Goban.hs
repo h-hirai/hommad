@@ -37,16 +37,16 @@ coord :: (Int, Int) -> Coord
 coord (row, col) = Coord $ row*(boardSize+2) + col
 
 data GameStatus = GameStatus {
-      _board :: Board Color    -- ^Board status
-    , _turn :: Color           -- ^Turn
-    , _ko :: Maybe Coord       -- ^Ko
+      _board :: Board Color
+    , _turn :: Color
+    , _ko :: Maybe Coord
     , _chains :: Board Chain
     } deriving (Show, Eq)
 
 data Chain = Chain {
       _chainSize :: Int
-    , _chainCoords :: Set Coord -- ^Coords of the chain stones
-    , _chainLiberties :: Set Coord -- ^Coords of the chain liberties
+    , _chainCoords :: Set Coord
+    , _chainLiberties :: Set Coord
     } deriving (Show, Eq, Ord)
 
 instance Monoid Chain where
@@ -73,10 +73,10 @@ initGame :: GameStatus
 initGame = GameStatus emptyBoard Black Nothing emptyBoard
 
 -- |
--- >>> boardRef emptyBoard (1,-1)
--- O
--- >>> boardRef emptyBoard (boardSize,1)
--- O
+-- >>> boardRef emptyBoard (1,0)
+-- OutOfBoard
+-- >>> boardRef emptyBoard (boardSize+1,1)
+-- OutOfBoard
 
 boardRef :: Board a -> Coord -> Point a
 boardRef b (Coord pt) = unsafeIndex b pt
@@ -92,8 +92,8 @@ boardRemove :: Board a -> Coord -> Board a
 boardRemove b (Coord pt) = V.update b (V.singleton (pt, Empty))
 
 -- |
--- >>> aroundOf (0,0)
--- [(-1,0),(1,0),(0,-1),(0,1)]
+-- >>> aroundOf (2,3)
+-- [(1,3),(3,3),(2,2),(2,4)]
 
 aroundOf :: Coord -> [Coord]
 aroundOf (Coord pt) = map Coord [pt-(boardSize+2), pt+(boardSize+2), pt-1, pt+1]
