@@ -112,8 +112,8 @@ getChain st pt = case boardRef (_chains st) pt of
 filterNeighbor :: Eq a => Board a -> Point a -> Coord -> [Coord]
 filterNeighbor b p pt = filter ((==p).boardRef b) $ aroundOf pt
 
-isLastLiberty :: Coord -> Chain -> Bool
-isLastLiberty pt = (==S.singleton pt) . _chainLiberties
+numOfLiberties :: Chain -> Int
+numOfLiberties = S.size . _chainLiberties
 
 canPut :: GameStatus -> Coord -> Bool
 canPut st@GameStatus{_board=b, _turn=t, _ko=ko} pt =
@@ -126,9 +126,9 @@ canPut st@GameStatus{_board=b, _turn=t, _ko=ko} pt =
       neighborSame = filterNeighbor b (Point t) pt
       neighborOpponent = filterNeighbor b (Point $ opponent t) pt
       hasLiberty = not (null neighborEmpty) ||
-                   any (not.isLastLiberty pt) (map (getChain st) neighborSame)
+                   any (>1) (map (numOfLiberties . getChain st) neighborSame)
       canKillOpponet =
-          any (isLastLiberty pt) $ map (getChain st) neighborOpponent
+          any (==1) $ map (numOfLiberties . getChain st) neighborOpponent
 
 updateChain :: (Chain -> Chain) -> Coord -> Board Chain -> Board Chain
 updateChain f pt chMap =
@@ -172,7 +172,7 @@ putStone st@(GameStatus b t _ cs) pt =
       chainConnected =
           mconcat $ chainSingleton : map (getChain st) neighborSame
       (chainCaptured, chainOpponent) =
-          partition (isLastLiberty pt) $ map (getChain st) neighborOpponent
+          partition ((==1).numOfLiberties) $ map (getChain st) neighborOpponent
       captured = F.foldMap _chainCoords chainCaptured
       newBoard = S.foldl' boardRemove (boardPut t b pt) captured
       ko = if S.size captured == 1 &&
