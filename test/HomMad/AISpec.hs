@@ -41,20 +41,28 @@ spec = do
                     ]
 
   describe "isEye" $ do
-    it "is simple eye" $ do
-      isSimpleEye testStatusA Black (coord (5,5)) `shouldBe` True
+    it "is eye of black" $ do
+      isEye (pass testStatusA) (coord (5,5)) `shouldBe` True
     it "is not eye of white" $ do
-      isSimpleEye testStatusA White (coord (5,5)) `shouldBe` False
-    it "not empty point is not eye" $ do
-      isSimpleEye testStatusA White (coord (8,9)) `shouldBe` False
-    it "is not simple eye" $ do
-      isSimpleEye testStatusA Black (coord (4,4)) `shouldBe` False
-    it "is not combined eye" $ do
-      isSimpleEye testStatusA Black (coord (4,4)) `shouldBe` False
-    it "is not treated as combined eye " $ do
-      isCombinedEye testStatusA White (coord (1,7)) `shouldBe` False
-    it "is combined eye" $ do
-      isCombinedEye testStatusA Black (coord (9,1)) `shouldBe` True
+      isEye testStatusA (coord (5,5)) `shouldBe` False
+    it "is not eye of black" $ do
+      isEye (pass testStatusA) (coord (1,7)) `shouldBe` False
+    it "is eye of white" $ do
+      isEye testStatusA (coord (1,7)) `shouldBe` True
+    it "is on stone" $ do
+      isEye testStatusA (coord (8,9)) `shouldBe` False
+    it "is not surrounded by any stone" $ do
+      isEye testStatusA (coord (1,1)) `shouldBe` False
+    it "is not surrounded by white stones only" $ do
+      isEye testStatusA (coord (5,9)) `shouldBe` False
+    it "is not surrounded by black stones only" $ do
+      isEye (pass testStatusA) (coord (5,9)) `shouldBe` False
+    it "has a slack" $ do
+      isEye testStatusA (coord (1,5)) `shouldBe` False
+    it "is eye" $ do
+      isEye (pass testStatusA) (coord (9,1)) `shouldBe` True
+    it "is false eye" $ do
+      isEye testStatusA (coord (9,9)) `shouldBe` True
 
   let testStatusB = playout 0 initGame
 
@@ -64,6 +72,6 @@ spec = do
     it "has no points can put (2)" $ do
       pointsCanPut (pass testStatusB) `shouldBe` []
 
-  describe "count" $ do
-    it "is (64,17)" $ do
-      count testStatusB `shouldBe` (9+9+9+9+6+6+5+6+5, 0+0+0+0+3+3+4+3+4)
+  -- describe "count" $ do
+  --   it "is (64,17)" $ do
+  --     count testStatusB `shouldBe` (9+9+9+9+6+6+5+6+5, 0+0+0+0+3+3+4+3+4)

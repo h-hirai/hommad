@@ -8,6 +8,7 @@ import qualified Data.Foldable as F
 import Data.Ratio (Ratio, (%))
 import Data.List (maximumBy)
 import Data.Ord (comparing)
+import Control.Applicative ((<$>), (<*>))
 
 komi :: Int
 komi = 7
@@ -51,36 +52,17 @@ playout seed = playout' False $ randomSeq seed
 
 pointsCanPut :: GameStatus -> [Coord]
 pointsCanPut st@GameStatus{_turn=c} =
-    filter (\p -> canPut st p &&
-                  not (isSimpleEye st c p) &&
-                  not (isCombinedEye st c p)) allCoords
+    filter (\p -> canPut st p && not (isEye st p)) allCoords
 
-isSingleSpace :: Board Color -> Color -> Coord -> Bool
-isSingleSpace b c p =
+isEye :: GameStatus -> Coord -> Bool
+isEye st@GameStatus{_board=b, _turn=c} p =
     boardRef b p == Empty &&
-    all ((\n -> n == Point c || n == OutOfBoard) . boardRef b) (aroundOf p)
-
-chainsSurrounding :: GameStatus -> Color -> Coord -> Set Chain
-chainsSurrounding st@GameStatus{_board=b} c p =
-    S.fromList $
-    map (getChain st) $ filter ((== Point c) . boardRef b) $ aroundOf p
-
-isSimpleEye :: GameStatus -> Color -> Coord -> Bool
-isSimpleEye st@GameStatus{_board=b} c p =
-    isSingleSpace b c p &&
-    let (p1:rest) = filter ((==Point c).(boardRef b)) $ aroundOf p
-        ch = _chainCoords $ getChain st p1 in
-    all (`S.member` ch) rest
-
-isCombinedEye :: GameStatus -> Color -> Coord -> Bool
-isCombinedEye st@GameStatus{_board=b} c p =
-    isSingleSpace b c p &&
-    S.size chains == 2 &&
-    F.any isOtherEye (_chainLiberties $ S.findMax chains)
-    where chains = chainsSurrounding st c p
-          isOtherEye pt = pt /= p &&
-                          isSingleSpace b c pt &&
-                          chainsSurrounding st c pt == chains
+    all ((||) <$> isOutOfBoard <*> isLivingChain) (aroundOf p)
+    where
+      isOutOfBoard = (== OutOfBoard) . boardRef b
+      isLivingChain = (&&) <$>
+                      (== Point c) . boardRef b <*>
+                      (>1) . numOfLiberties . getChain st
 
 count :: GameStatus -> (Int, Int)
 count GameStatus{_board=b} = (count' Black, count' White)
