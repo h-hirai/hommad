@@ -2,9 +2,6 @@ module HomMad.AI where
 
 import HomMad.Goban
 import System.Random
-import Data.Set (Set)
-import qualified Data.Set as S
-import qualified Data.Foldable as F
 import Data.Ratio (Ratio, (%))
 import Data.List (maximumBy)
 import Data.Ord (comparing)
